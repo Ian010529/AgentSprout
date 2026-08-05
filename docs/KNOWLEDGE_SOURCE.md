@@ -43,4 +43,3 @@ Repository strategy: committed original / verified download script
 - Each in-knowledge case records expected evidence pages/chunks.
 - Out-of-knowledge cases must be demonstrably absent or unsupported; model memory is not an answer source.
 - Do not tune case wording solely to make a failing system pass. Record material changes to suite wording in the suite version and decision log.
-

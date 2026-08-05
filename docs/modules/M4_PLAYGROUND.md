@@ -117,4 +117,3 @@ Submit/review/public endpoints remain out of scope.
 - [ ] Normal latency is measured against target.
 - [ ] M1–M3 regressions pass.
 - [ ] Evidence is recorded before moving to M5.
-

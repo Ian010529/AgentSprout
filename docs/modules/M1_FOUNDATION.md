@@ -107,7 +107,7 @@ Other routes may exist only as route-level not-found behavior; do not create stu
 
 ```text
 Acceptance ID: ACC-FND-001
-Commit: recorded after the foundation commit below
+Commit: 949c9d2 (M1 foundation snapshot)
 Environment: macOS arm64; Python 3.12.13; Node 24.14.0; pnpm 11.9.0
 Commands: README environment creation/install/start commands; backend and frontend quality gates
 Result: PASS — backend and frontend started on ports 8000/3000; 7 backend tests and 4 frontend tests passed; lint, format, strict types, and production build passed
@@ -119,7 +119,7 @@ Notes: no real secret was written; M1 process-scoped synthetic values made zero 
 
 ```text
 Acceptance ID: ACC-FND-002
-Commit: recorded after the foundation commit below
+Commit: 949c9d2 (M1 foundation snapshot)
 Environment: local temporary data root /tmp/agentsprout-m1-live-20260806
 Commands: alembic upgrade/current; API tests; local browser acceptance
 Result: PASS — empty migration reached 0001_foundation; SQLite WAL/foreign keys, persistent Chroma, uploads, and migration checks passed
@@ -131,7 +131,7 @@ Notes: browser showed Workshop ready with four ok checks; offline state exposed 
 
 ```text
 Acceptance ID: ACC-CI-001 (M1 subset)
-Commit: recorded after the foundation commit below
+Commit: 949c9d2 (M1 foundation snapshot)
 Environment: local locked environments
 Commands: ruff check; ruff format --check; pyright; pytest; pnpm lint; pnpm typecheck; pnpm test; pnpm build
 Result: PASS — Ruff clean, 0 Pyright errors, 7/7 Pytest, ESLint clean, TypeScript clean, 4/4 Vitest, Next production build successful

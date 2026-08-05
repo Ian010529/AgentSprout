@@ -173,4 +173,3 @@ Before announcing the live URL:
 - Evaluation can start and progress.
 - GitHub CI is green at the deployed commit.
 - Access code is shared privately with the interviewer, not posted publicly.
-

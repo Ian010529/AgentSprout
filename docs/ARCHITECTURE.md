@@ -334,4 +334,3 @@ This design is intentionally single-instance. Before real multi-user production,
 - single-volume uploads with object storage
 - basic rate limiting with a distributed limiter
 - prototype privacy and safeguarding controls with formal legal, school, and child-safety review
-

@@ -105,4 +105,3 @@ The Teacher publishes an Approved version to a stable public slug. Anonymous vis
 - [ ] Reset is secure/idempotent and preserves fixed sample.
 - [ ] M1–M6 regressions pass.
 - [ ] Evidence is recorded before moving to M8.
-

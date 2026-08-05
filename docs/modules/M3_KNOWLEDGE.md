@@ -108,4 +108,3 @@ The Student uploads the official NOAA PDF from the Workspace, sees real asynchro
 - [ ] M1–M2 regressions pass.
 - [ ] No raw upload is public or outside validated data paths.
 - [ ] Evidence is recorded before moving to M4.
-

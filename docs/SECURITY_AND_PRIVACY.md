@@ -217,4 +217,3 @@ Teacher traces use an allowlist, not a denylist.
 ## 16. Production gaps
 
 Before deployment to real children, obtain expert review for consent, age assurance, parental controls, school administration, data residency, DPA terms, safeguarding escalation, audit retention, abuse reporting, account recovery, staff permissions, deletion requests, and jurisdiction-specific privacy obligations.
-

@@ -111,4 +111,3 @@ The Student submits an immutable v1, the Teacher starts a real 16-case evaluatio
 - [ ] M1–M4 regressions pass.
 - [ ] Live report records models/time/usage/cost.
 - [ ] Evidence is recorded before moving to M6.
-

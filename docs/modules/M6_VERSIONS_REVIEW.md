@@ -100,4 +100,3 @@ The Teacher requests changes with feedback, the Student creates an immutable-com
 - [ ] Approval is server-gated by eligible evaluation.
 - [ ] M1–M5 regressions pass.
 - [ ] Evidence is recorded before moving to M7.
-

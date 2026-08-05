@@ -483,4 +483,3 @@ HTML is treated as text and safely rendered. Unknown fields are rejected.
 - Same key and same request returns the prior result.
 - Same key with a different request returns `409 IDEMPOTENCY_KEY_REUSED`.
 - Retain idempotency records long enough to cover browser retry windows; final duration is fixed in M1 and documented without changing behavior.
-

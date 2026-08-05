@@ -91,4 +91,3 @@ The UI must never display simulated processing progress. Displayed stages and co
 - `docs/modules/*.md` own module scope and exit gates.
 
 If documents disagree, stop implementation, resolve the conflict in M0-style documentation, and record the resolution in `docs/DECISION_LOG.md`.
-

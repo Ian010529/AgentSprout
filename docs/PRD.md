@@ -221,4 +221,3 @@ The MVP is accepted when:
 - No horizontal replicas in the MVP.
 - Studio requires a shared access code; this is explicitly not real authentication.
 - Public use is cost- and abuse-limited.
-

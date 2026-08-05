@@ -98,4 +98,3 @@ Do not implement submit, next-version, review, or publish behavior in this modul
 - [ ] M1 regression suite passes.
 - [ ] No access code or token leakage is found.
 - [ ] Evidence is recorded before moving to M3.
-

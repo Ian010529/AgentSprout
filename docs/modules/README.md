@@ -15,4 +15,3 @@ Development is sequential. `docs/CURRENT_MODULE.md` is the only current-module p
 | [M8](M8_CLOUD_POLISH.md) | Cloud deployment, CI, accessibility, demo proof | Pending |
 
 Every module document owns its frontend scope, backend scope, API/data changes, tests, manual verification, non-goals, and exit evidence. Later module implementation must not begin early.
-

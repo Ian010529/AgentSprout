@@ -227,4 +227,3 @@ Store final acceptance screenshots outside runtime data for:
 - Published Agent mobile
 
 Screenshots must contain no real secrets, access codes, PII, or identifying child data.
-

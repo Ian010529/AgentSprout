@@ -107,4 +107,3 @@ The accepted local product is deployed from a public GitHub repository to Vercel
 - [ ] README contains verified setup, architecture, limitations, and links.
 - [ ] All M1–M7 regressions and final acceptance IDs pass.
 - [ ] Final evidence is recorded and user receives deployment/secret/cost handoff.
-

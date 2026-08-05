@@ -205,4 +205,3 @@ Measured under a warmed, healthy demo environment:
 | ordinary API reads | p95 under 500 ms locally/cloud target | documented if platform cold start dominates |
 
 Targets are reported, not achieved through fake delays or cached canned answers.
-

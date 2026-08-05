@@ -254,4 +254,3 @@ The fixed published sample is excluded from workspace reset. A published knowled
 - Seed data is idempotent and separate from migrations when it includes product examples.
 - No destructive migration runs automatically without a documented backup/recovery plan.
 - Chroma metadata schema changes require an explicit re-index strategy and decision-log entry.
-
