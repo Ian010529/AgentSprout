@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=80.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentsprout-api"
+version = "0.1.0"
+description = "AgentSprout Studio backend API"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic==1.19.0",
+  "chromadb==1.5.9",
+  "fastapi==0.141.1",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.14.2",
+  "sqlalchemy==2.0.51",
+  "uvicorn[standard]==0.52.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx2==2.9.1",
+  "pyright==1.1.411",
+  "pytest==9.1.1",
+  "pytest-asyncio==1.4.0",
+  "ruff==0.16.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.pyright]
+include = ["app", "tests"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+venvPath = "."
+venv = ".venv"

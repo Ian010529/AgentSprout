@@ -1,0 +1,41 @@
+# Secrets
+.env
+.env.*
+!.env.example
+frontend/.env.local
+
+# Python
+backend/.venv/
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/.mypy_cache/
+backend/.pyright/
+backend/**/__pycache__/
+backend/**/*.py[cod]
+backend/*.egg-info/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/*.tsbuildinfo
+
+# Runtime data
+data/
+backend/data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# Test and local artifacts
+.coverage
+coverage.xml
+playwright-report/
+test-results/
+*.log
+.DS_Store
+.vercel/
+
