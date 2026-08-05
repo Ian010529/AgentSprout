@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     global_daily_model_limit: int = Field(default=300, ge=1)
     daily_evaluation_limit: int = Field(default=5, ge=1)
     daily_ingestion_limit: int = Field(default=5, ge=1)
+    session_hours: int = Field(default=8, ge=1, le=24)
+    access_failed_limit: int = Field(default=5, ge=1, le=20)
+    access_window_minutes: int = Field(default=15, ge=1, le=60)
+    idempotency_hours: int = Field(default=24, ge=1, le=72)
 
     @field_validator("allowed_origins")
     @classmethod

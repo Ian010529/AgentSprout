@@ -1,16 +1,68 @@
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
-const REQUEST_TIMEOUT_MS = 5_000;
+const REQUEST_TIMEOUT_MS = 8_000;
 
-export type HealthResponse = {
-  status: "ok";
-  service: "agentsprout-api";
-};
+export type Role = "STUDENT" | "TEACHER";
+export type AudienceAge = "AGE_7_11" | "AGE_12_17";
+export type Tone = "FRIENDLY" | "CURIOUS" | "COACH_LIKE";
+export type ResponseLength = "SHORT" | "BALANCED";
 
+export type HealthResponse = { status: "ok"; service: "agentsprout-api" };
 export type ReadinessCheck = "ok" | "failed";
-
 export type ReadinessResponse = {
   status: "ready" | "not_ready";
   checks: Record<"sqlite" | "chroma" | "uploads" | "migrations", ReadinessCheck>;
+};
+
+export type SessionResponse = {
+  session: { role: Role; expires_at: string };
+  csrf_token: string;
+};
+
+export type AgentFields = {
+  project_name: string;
+  problem_to_solve: string;
+  intended_users: string;
+  audience_age: AudienceAge;
+  success_goal: string;
+  welcome_message: string;
+  tone: Tone;
+  response_length: ResponseLength;
+  custom_instructions: string;
+};
+
+export type AgentCreate = AgentFields & { template: "KNOWLEDGE_EXPLORER" };
+export type VersionSummary = {
+  id: string;
+  number: number;
+  state: "DRAFT";
+  knowledge_status: "NOT_ADDED";
+};
+export type AgentSummary = {
+  id: string;
+  display_name: string;
+  current_version: VersionSummary;
+  allowed_actions: string[];
+  next_action: string;
+};
+export type AgentAggregate = {
+  id: string;
+  display_name: string;
+  slug: string;
+  current_draft_version_id: string | null;
+  published_version_id: string | null;
+  versions: VersionSummary[];
+  allowed_actions: string[];
+};
+export type VersionDetail = AgentFields & {
+  id: string;
+  agent_id: string;
+  version_number: number;
+  state: "DRAFT";
+  active_document_id: string | null;
+  knowledge_status: "NOT_ADDED";
+  allowed_actions: string[];
+  created_at: string;
+  updated_at: string;
 };
 
 type ErrorEnvelope = {
@@ -19,6 +71,8 @@ type ErrorEnvelope = {
     message?: string;
     request_id?: string;
     retryable?: boolean;
+    retry_after_seconds?: number | null;
+    field_errors?: Record<string, string>;
   };
 };
 
@@ -29,6 +83,8 @@ export class ApiError extends Error {
     readonly code: string,
     readonly requestId: string | null,
     readonly retryable: boolean,
+    readonly retryAfterSeconds: number | null = null,
+    readonly fieldErrors: Record<string, string> = {},
   ) {
     super(message);
     this.name = "ApiError";
@@ -44,52 +100,106 @@ async function parseError(response: Response): Promise<ApiError> {
   try {
     body = (await response.json()) as ErrorEnvelope;
   } catch {
-    // Non-JSON upstream failures are normalized to safe copy below.
+    // Normalize non-JSON upstream failures to safe product copy.
   }
-
-  const requestId = body.error?.request_id ?? response.headers.get("X-Request-ID");
-  const message = body.error?.message ?? "AgentSprout could not reach the service.";
   return new ApiError(
-    message,
+    body.error?.message ?? "AgentSprout could not reach the service.",
     response.status,
     body.error?.code ?? "API_ERROR",
-    requestId,
+    body.error?.request_id ?? response.headers.get("X-Request-ID"),
     body.error?.retryable ?? response.status >= 500,
+    body.error?.retry_after_seconds ?? null,
+    body.error?.field_errors ?? {},
   );
 }
 
-async function getJson<T>(
-  path: string,
-  signal?: AbortSignal,
-  acceptedStatuses: readonly number[] = [],
-): Promise<T> {
+type RequestOptions = {
+  method?: "GET" | "POST" | "PATCH" | "DELETE";
+  body?: unknown;
+  csrfToken?: string;
+  idempotencyKey?: string;
+  signal?: AbortSignal;
+  acceptedStatuses?: readonly number[];
+};
+
+async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+  const combinedSignal = options.signal
+    ? AbortSignal.any([options.signal, timeoutSignal])
+    : timeoutSignal;
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (options.body !== undefined) headers["Content-Type"] = "application/json";
+  if (options.csrfToken) headers["X-CSRF-Token"] = options.csrfToken;
+  if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
 
   try {
     const response = await fetch(`${apiBaseUrl()}${path}`, {
-      method: "GET",
-      headers: { Accept: "application/json" },
+      method: options.method ?? "GET",
+      headers,
       credentials: "include",
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: combinedSignal,
     });
-    if (!response.ok && !acceptedStatuses.includes(response.status)) {
+    if (!response.ok && !options.acceptedStatuses?.includes(response.status)) {
       throw await parseError(response);
     }
+    if (response.status === 204) return undefined as T;
     return (await response.json()) as T;
   } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new ApiError("The service check timed out. Try again.", null, "TIMEOUT", null, true);
+    if (error instanceof ApiError) throw error;
+    if (error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)) {
+      const abortedByCaller = options.signal?.aborted ?? false;
+      throw new ApiError(
+        abortedByCaller ? "The request was cancelled." : "The request timed out. Try again.",
+        null,
+        abortedByCaller ? "CANCELLED" : "TIMEOUT",
+        null,
+        !abortedByCaller,
+      );
     }
     throw new ApiError("The backend is offline or unreachable.", null, "NETWORK_ERROR", null, true);
   }
 }
 
 export const systemApi = {
-  health: (signal?: AbortSignal) => getJson<HealthResponse>("/api/v1/health", signal),
+  health: (signal?: AbortSignal) => requestJson<HealthResponse>("/api/v1/health", { signal }),
   readiness: (signal?: AbortSignal) =>
-    getJson<ReadinessResponse>("/api/v1/ready", signal, [503]),
+    requestJson<ReadinessResponse>("/api/v1/ready", { signal, acceptedStatuses: [503] }),
+};
+
+export const studioApi = {
+  access: (accessCode: string) =>
+    requestJson<SessionResponse>("/api/v1/studio/access", {
+      method: "POST",
+      body: { access_code: accessCode },
+    }),
+  restore: (signal?: AbortSignal) =>
+    requestJson<SessionResponse>("/api/v1/studio/session", { signal }),
+  changeRole: (role: Role, csrfToken: string) =>
+    requestJson<SessionResponse>("/api/v1/studio/session/role", {
+      method: "PATCH",
+      body: { role },
+      csrfToken,
+    }),
+  signOut: (csrfToken: string) =>
+    requestJson<void>("/api/v1/studio/session", { method: "DELETE", csrfToken }),
+  listAgents: (signal?: AbortSignal) =>
+    requestJson<{ agents: AgentSummary[] }>("/api/v1/studio/agents", { signal }),
+  createAgent: (payload: AgentCreate, csrfToken: string, idempotencyKey: string) =>
+    requestJson<{ agent: AgentAggregate; version: VersionDetail }>("/api/v1/studio/agents", {
+      method: "POST",
+      body: payload,
+      csrfToken,
+      idempotencyKey,
+    }),
+  getAgent: (agentId: string, signal?: AbortSignal) =>
+    requestJson<AgentAggregate>(`/api/v1/studio/agents/${agentId}`, { signal }),
+  getVersion: (versionId: string, signal?: AbortSignal) =>
+    requestJson<VersionDetail>(`/api/v1/studio/versions/${versionId}`, { signal }),
+  updateVersion: (versionId: string, payload: Partial<AgentFields>, csrfToken: string) =>
+    requestJson<VersionDetail>(`/api/v1/studio/versions/${versionId}`, {
+      method: "PATCH",
+      body: payload,
+      csrfToken,
+    }),
 };

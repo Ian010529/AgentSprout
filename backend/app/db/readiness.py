@@ -8,6 +8,7 @@ import chromadb
 from chromadb.api import ClientAPI
 from chromadb.config import Settings as ChromaSettings
 from sqlalchemy import Engine, text
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.db.migrations import migrations_are_current
@@ -18,6 +19,7 @@ class RuntimeResources:
     settings: Settings
     engine: Engine
     chroma: ClientAPI
+    session_factory: sessionmaker[Session]
 
 
 def create_chroma_client(settings: Settings) -> ClientAPI:

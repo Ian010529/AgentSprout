@@ -2,7 +2,7 @@
 
 ## Status
 
-Implementation complete; awaiting user acceptance after M0 approval on 2026-08-06.
+Accepted by the user on 2026-08-06.
 
 ## Vertical outcome
 

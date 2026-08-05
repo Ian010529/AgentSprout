@@ -21,7 +21,7 @@ export default function Home() {
           AgentSprout
         </Link>
         <div className="topbar-meta">
-          <span className="environment-pill">Foundation · M1</span>
+          <span className="environment-pill">Studio · Live Drafts</span>
           <Link className="nav-link" href="/access">
             Enter Studio
           </Link>
@@ -91,11 +91,11 @@ export default function Home() {
 
         <section className="foundation-section" aria-labelledby="foundation-title">
           <div>
-            <p className="eyebrow">M1 foundation</p>
+            <p className="eyebrow">System foundation</p>
             <h2 id="foundation-title">The workshop has an honest heartbeat.</h2>
             <p>
-              This first module proves the application shell and persistence services are real. It
-              does not pretend later Agent-building features are finished.
+              Health, persistence, and the protected Studio are real. Later build stages stay
+              visibly locked until their implementation and evidence are complete.
             </p>
           </div>
           <SystemStatus />

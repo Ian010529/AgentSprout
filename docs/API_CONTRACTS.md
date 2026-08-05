@@ -97,6 +97,13 @@ The access endpoint is rate limited. It never returns whether a partially matchi
 
 Returns current role, expiry, and a refreshed CSRF token if the session is valid.
 
+```json
+{
+  "session":{"role":"STUDENT","expires_at":"..."},
+  "csrf_token":"rotated-opaque-token"
+}
+```
+
 ### `PATCH /studio/session/role`
 
 Studio mutation. Body:
@@ -117,6 +124,20 @@ Revokes the server session and clears the cookie.
 
 Optional filters: `state`, `needs_review`. Returns summarized agent cards and server-authoritative next actions.
 
+```json
+{
+  "agents":[
+    {
+      "id":"uuid",
+      "display_name":"Ocean Explorer",
+      "current_version":{"id":"uuid","number":1,"state":"DRAFT","knowledge_status":"NOT_ADDED"},
+      "allowed_actions":["EDIT_DRAFT"],
+      "next_action":"Continue defining the agent"
+    }
+  ]
+}
+```
+
 ### `POST /studio/agents`
 
 Student-only. `Idempotency-Key` required.
@@ -136,11 +157,25 @@ Student-only. `Idempotency-Key` required.
 }
 ```
 
-Returns `201` with the Agent and v1 Draft.
+Returns `201` with `{ "agent": AgentAggregate, "version": VersionDetail }`. Reusing the same idempotency key and byte-equivalent logical request returns the same body and status. Reusing the key with different content returns `409 IDEMPOTENCY_CONFLICT`.
 
 ### `GET /studio/agents/{agent_id}`
 
 Returns aggregate summary, all visible version summaries, current Draft, published version, and allowed actions for the current role.
+
+The M2 aggregate is:
+
+```json
+{
+  "id":"uuid",
+  "display_name":"Ocean Explorer",
+  "slug":"ocean-explorer-opaque",
+  "current_draft_version_id":"uuid",
+  "published_version_id":null,
+  "versions":[{"id":"uuid","number":1,"state":"DRAFT"}],
+  "allowed_actions":["EDIT_DRAFT"]
+}
+```
 
 ### `GET /studio/versions/{version_id}`
 
@@ -149,6 +184,8 @@ Returns full Studio configuration, knowledge status, reflection, lifecycle state
 ### `PATCH /studio/versions/{version_id}`
 
 Student-only, Draft-only. Partial editable fields from `docs/PRD.md`. Unknown or protected fields are rejected, not ignored.
+
+M2 validation limits are: project name 3–80 characters; problem 10–500; intended users 3–240; success goal 10–300; welcome message 3–240; custom instructions 0–500. Strings are trimmed and control characters are rejected. At least one editable field is required.
 
 ### `POST /studio/versions/{version_id}/submit`
 

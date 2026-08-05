@@ -150,6 +150,9 @@ The specific response depth depends on the configured age mode.
 - Session expiry and revocation are enforced server-side.
 - Student and Teacher permissions follow the state machine; hidden buttons are not authorization.
 - Admin reset uses a separate secret and endpoint, never the Studio access code.
+- Studio sessions expire after 8 hours. `GET /studio/session` rotates the CSRF token so a refreshed page can restore the session without browser storage.
+- Access-code failures allow five attempts per keyed client-IP hash in a rolling 15-minute window; the sixth attempt returns a generic `429` with retry timing.
+- Agent-creation idempotency records expire after 24 hours and store a request hash plus the safe response body, never access credentials.
 
 This gate is not multi-user authentication. The UI and README must not describe it as such.
 

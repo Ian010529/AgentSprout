@@ -2,7 +2,7 @@
 
 ## Status
 
-Pending M1 acceptance.
+Accepted on 2026-08-06 under the user's instruction to advance automatically after each module passes acceptance.
 
 ## Vertical outcome
 
@@ -92,9 +92,46 @@ Do not implement submit, next-version, review, or publish behavior in this modul
 
 ## Exit gate
 
-- [ ] Full access/create/refresh flow passes through browser.
-- [ ] Backend, not UI, enforces session, role, CSRF, lifecycle, and fields.
-- [ ] All required component states are demonstrable.
-- [ ] M1 regression suite passes.
-- [ ] No access code or token leakage is found.
-- [ ] Evidence is recorded before moving to M3.
+- [x] Full access/create/refresh flow passes through browser.
+- [x] Backend, not UI, enforces session, role, CSRF, lifecycle, and fields.
+- [x] All required component states are demonstrable.
+- [x] M1 regression suite passes.
+- [x] No real access code or raw session/CSRF token leakage is found.
+- [x] Evidence is recorded before moving to M3.
+
+## Acceptance evidence
+
+### ACC-AUTH-001 and ACC-AUTH-002 — Access and server-owned session
+
+```text
+Acceptance IDs: ACC-AUTH-001, ACC-AUTH-002
+Commit: pending M2 snapshot
+Environment: local FastAPI/Next.js services; isolated temporary SQLite/Chroma root
+Commands: Ruff; Pyright; Pytest; direct API security tests; local browser acceptance
+Result: PASS — constant-time generic access denial, five-failure limiter, exact Origin, opaque HttpOnly cookie, CSRF rotation, 8-hour expiry, role mutation, revocation, and 401 restoration behavior passed
+Artifact: backend/tests/test_access_dashboard.py, frontend/src/components/access-form.test.tsx
+Notes: test-only synthetic credentials were process-scoped; no real secret was written to browser storage, URLs, responses, logs, screenshots, or Git
+```
+
+### ACC-AGT-001 — Create, edit, restore, and permissions
+
+```text
+Acceptance ID: ACC-AGT-001
+Commit: pending M2 snapshot
+Environment: Chromium in-app browser against localhost:3000/8000
+Commands: API integration suite; Vitest component suite; browser access → create → edit → refresh → role switch → sign out
+Result: PASS — Ocean Explorer created once, persisted as Draft, editable allowlist restored after refresh, Teacher view was read-only, protected fields were rejected, and sign out revoked the session
+Artifact: backend/tests/test_access_dashboard.py, frontend/src/components/studio-dashboard.test.tsx, frontend/src/components/agent-workspace.test.tsx
+Notes: browser acceptance found and fixed an over-broad PATCH payload; a regression test now asserts exactly nine editable fields
+```
+
+### M2 quality and browser regression
+
+```text
+Backend: Ruff clean; format clean; 0 Pyright errors; 14/14 Pytest
+Frontend: ESLint clean; TypeScript clean; 11/11 Vitest; Next.js production build successful
+Browser: invalid and valid access, persisted Dashboard, Draft edit/refresh, Teacher role, narrow-screen message, and sign out passed
+Security: CSRF/origin/role/idempotency/unknown-field tests passed; script markup rendered as inert textbox text
+Console: final clean-browser critical flow contained 0 warnings and 0 errors
+Responsive: 900 × 800 showed the intentional below-1024 laptop/landscape message
+```

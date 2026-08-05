@@ -1,12 +1,6 @@
-import { PlannedRoute } from "@/components/planned-route";
+import { AgentWorkspace } from "@/components/agent-workspace";
 
-export default function AgentWorkspacePage() {
-  return (
-    <PlannedRoute
-      eyebrow="Agent workspace"
-      title="Define, knowledge, test, and submit arrive as verified slices."
-      description="This workspace will only show persisted configuration and backend-reported processing stages."
-      module="M2–M4"
-    />
-  );
+export default async function AgentWorkspacePage({ params }: PageProps<"/studio/agents/[agentId]">) {
+  const { agentId } = await params;
+  return <AgentWorkspace agentId={agentId} />;
 }

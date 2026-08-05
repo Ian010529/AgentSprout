@@ -202,6 +202,12 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Decision: Pin project-local pip to 25.3 for the verified setup. Use `httpx2==2.9.1` for the FastAPI/Starlette test client while retaining Chroma's locked `httpx==0.28.1` transitive dependency; the packages use separate import namespaces. Generate `requirements.lock` from the resolved, tested Python 3.12 environment and verify it with `pip check` and a lockfile install.
 - Reason: pip 26.2.1 was incompatible with the available lock-generation tool, and Starlette 1.4.1 explicitly moved its test client to `httpx2` while Chroma 1.5.9 still declares `httpx`.
 
+### D-039 — M2 session, access limiter, and idempotency details
+
+- Date: 2026-08-06
+- Decision: Use an opaque `agentsprout_session` cookie backed by an HMAC token hash, with an 8-hour server expiry. Rotate the CSRF token on session restoration and keep the raw CSRF value in frontend memory only. Permit five failed access-code attempts per keyed client-IP hash in 15 minutes. Retain Agent-creation idempotency records for 24 hours and reject key reuse with a different request hash.
+- Reason: Implements the approved demo gate without browser-stored credentials, raw IP storage, or ambiguous duplicate creation behavior.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:
