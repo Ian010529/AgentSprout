@@ -105,7 +105,7 @@ Do not implement submit, next-version, review, or publish behavior in this modul
 
 ```text
 Acceptance IDs: ACC-AUTH-001, ACC-AUTH-002
-Commit: pending M2 snapshot
+Commit: e3386a5 (M2 implementation snapshot)
 Environment: local FastAPI/Next.js services; isolated temporary SQLite/Chroma root
 Commands: Ruff; Pyright; Pytest; direct API security tests; local browser acceptance
 Result: PASS — constant-time generic access denial, five-failure limiter, exact Origin, opaque HttpOnly cookie, CSRF rotation, 8-hour expiry, role mutation, revocation, and 401 restoration behavior passed
@@ -117,7 +117,7 @@ Notes: test-only synthetic credentials were process-scoped; no real secret was w
 
 ```text
 Acceptance ID: ACC-AGT-001
-Commit: pending M2 snapshot
+Commit: e3386a5 (M2 implementation snapshot)
 Environment: Chromium in-app browser against localhost:3000/8000
 Commands: API integration suite; Vitest component suite; browser access → create → edit → refresh → role switch → sign out
 Result: PASS — Ocean Explorer created once, persisted as Draft, editable allowlist restored after refresh, Teacher view was read-only, protected fields were rejected, and sign out revoked the session
