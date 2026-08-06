@@ -54,6 +54,21 @@ afterEach(() => {
 });
 
 describe("AgentWorkspace", () => {
+  it("keeps the unavailable Draft message inside the main landmark", async () => {
+    studioMocks.restore.mockResolvedValue({
+      session: { role: "STUDENT", expires_at: "2026-08-06T12:00:00Z" },
+      csrf_token: "csrf-student",
+    });
+    studioMocks.getAgent.mockResolvedValue({ current_draft_version_id: null });
+
+    render(<AgentWorkspace agentId="published-agent" />);
+
+    const heading = await screen.findByRole("heading", { name: "This Agent has no editable Draft." });
+    const main = heading.closest("main");
+    expect(main).toHaveAttribute("aria-live", "assertive");
+    expect(main).not.toHaveAttribute("role", "alert");
+  });
+
   it("PATCHes only the editable field allowlist and restores saved values", async () => {
     studioMocks.restore.mockResolvedValue({
       session: { role: "STUDENT", expires_at: "2026-08-06T12:00:00Z" },

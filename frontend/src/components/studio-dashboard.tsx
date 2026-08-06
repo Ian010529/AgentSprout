@@ -154,7 +154,7 @@ export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardV
   }
   if (state.phase === "error") {
     return (
-      <main className="studio-loading" role="alert">
+      <main className="studio-loading" aria-live="assertive">
         <p className="eyebrow">Connection interrupted</p>
         <h1>The workshop did not open.</h1>
         <p>{state.message}</p>

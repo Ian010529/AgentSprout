@@ -61,6 +61,16 @@ afterEach(() => {
 });
 
 describe("StudioDashboard", () => {
+  it("keeps a connection error inside the main landmark", async () => {
+    studioMocks.restore.mockRejectedValue(new Error("Studio unavailable"));
+    render(<StudioDashboard />);
+
+    const heading = await screen.findByRole("heading", { name: "The workshop did not open." });
+    const main = heading.closest("main");
+    expect(main).toHaveAttribute("aria-live", "assertive");
+    expect(main).not.toHaveAttribute("role", "alert");
+  });
+
   it("restores a Student session and shows the real empty state", async () => {
     studioMocks.restore.mockResolvedValue(studentSession);
     studioMocks.listAgents.mockResolvedValue({ agents: [] });

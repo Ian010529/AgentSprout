@@ -197,7 +197,7 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
   }
 
   if (state.phase === "loading") return <main className="studio-loading" aria-live="polite"><span className="ocean-loader" aria-hidden="true" /><p>Opening Agent Draft…</p></main>;
-  if (state.phase === "error") return <main className="studio-loading" role="alert"><p className="eyebrow">{state.missing ? "Draft not found" : "Workspace interrupted"}</p><h1>{state.message}</h1><div className="error-actions"><Link href="/studio">Back to workshop</Link>{!state.missing ? <button className="studio-primary" onClick={() => { setState({ phase: "loading" }); void load(); }}>Try again</button> : null}</div></main>;
+  if (state.phase === "error") return <main className="studio-loading" aria-live="assertive"><p className="eyebrow">{state.missing ? "Draft not found" : "Workspace interrupted"}</p><h1>{state.message}</h1><div className="error-actions"><Link href="/studio">Back to workshop</Link>{!state.missing ? <button className="studio-primary" onClick={() => { setState({ phase: "loading" }); void load(); }}>Try again</button> : null}</div></main>;
 
   const editable = state.role === "STUDENT" && state.version.allowed_actions.includes("EDIT_DRAFT");
   const knowledgeProcessing = state.version.knowledge_status === "PROCESSING";

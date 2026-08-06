@@ -248,7 +248,7 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
   }
 
   if (loading) return <main className="studio-loading" aria-live="polite"><span className="ocean-loader" /><p>Opening Teacher evidence…</p></main>;
-  if (!state) return <main className="studio-loading" role="alert"><h1>Review unavailable.</h1><p>{error}</p><Link href="/studio">Back to workshop</Link></main>;
+  if (!state) return <main className="studio-loading" aria-live="assertive"><h1>Review unavailable.</h1><p>{error}</p><Link href="/studio">Back to workshop</Link></main>;
   const run = state.selected;
   const visible = filter === "ALL" ? state.cases : state.cases.filter((item) => item.category === filter);
   const active = run && ["QUEUED", "RUNNING"].includes(run.state);
