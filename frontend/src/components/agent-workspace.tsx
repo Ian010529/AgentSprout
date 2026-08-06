@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { KnowledgePanel } from "@/components/knowledge-panel";
+import { PlaygroundPanel } from "@/components/playground-panel";
 import { StudioShell } from "@/components/studio-shell";
 import {
   ApiError,
@@ -144,8 +145,8 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
         </section>
         <ol className="workspace-steps" aria-label="Agent build stages">
           <li className="is-complete"><span>01</span><strong>Define</strong><small>Drafted</small></li>
-          <li className="is-active"><span>02</span><strong>Knowledge</strong><small>{knowledgeReady ? "Ready" : knowledgeProcessing ? "Processing" : "In progress"}</small></li>
-          <li className={knowledgeReady ? "is-ready" : ""}><span>03</span><strong>Test</strong><small>{knowledgeReady ? "Ready next" : "Locked"}</small></li>
+          <li className={knowledgeReady ? "is-complete" : "is-active"}><span>02</span><strong>Knowledge</strong><small>{knowledgeReady ? "Ready" : knowledgeProcessing ? "Processing" : "In progress"}</small></li>
+          <li className={knowledgeReady ? "is-active" : ""}><span>03</span><strong>Test</strong><small>{knowledgeReady ? "Open" : "Locked"}</small></li>
           <li><span>04</span><strong>Submit</strong><small>Locked</small></li>
         </ol>
 
@@ -176,8 +177,17 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
           onSessionExpired={sessionExpired}
         />
 
+        {knowledgeReady ? (
+          <PlaygroundPanel
+            role={state.role}
+            csrf={state.csrf}
+            version={state.version}
+            onSessionExpired={sessionExpired}
+          />
+        ) : null}
+
         <section className="locked-stages" aria-label="Later build stages">
-          {knowledgeReady ? <ReadyStage number="03" title="Ready for grounded testing" copy="The evidence index passed ingestion. Playground behavior arrives in the next build stage." /> : <LockedStage number="03" title="Test behavior" copy="Add a Ready source before asking grounded questions or trying safety boundaries." />}
+          {!knowledgeReady ? <LockedStage number="03" title="Test behavior" copy="Add a Ready source before asking grounded questions or trying safety boundaries." /> : null}
           <LockedStage number="04" title="Request review" copy="Submit only after knowledge and safety checks are complete." />
         </section>
       </main>
@@ -192,8 +202,4 @@ function WorkspaceField({ label, value, minLength, maxLength, textarea, required
 
 function LockedStage({ number, title, copy }: { number: string; title: string; copy: string }) {
   return <article><span>{number}</span><div><p className="eyebrow">Locked for now</p><h2>{title}</h2><p>{copy}</p></div><strong aria-label="Locked">⌁</strong></article>;
-}
-
-function ReadyStage({ number, title, copy }: { number: string; title: string; copy: string }) {
-  return <article className="is-ready"><span>{number}</span><div><p className="eyebrow">Requirement met</p><h2>{title}</h2><p>{copy}</p></div><strong aria-label="Ready">✓</strong></article>;
 }

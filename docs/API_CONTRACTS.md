@@ -366,6 +366,12 @@ Result types: `ANSWERED`, `BLOCKED`, `GUIDED`, `REFUSED`, `FAILED`.
 
 Returns allowed Studio messages, final results, and citations. It never returns blocked raw PII, raw unsafe output, hidden prompts, or full internal traces.
 
+### `GET /studio/versions/{version_id}/conversation`
+
+Returns the most recently updated, unexpired Studio conversation for refresh restoration, or
+JSON `null` when no conversation exists. It uses the same allowlisted message shape as the
+conversation-by-ID endpoint.
+
 ### `GET /studio/runs/{run_id}/trace`
 
 Teacher-only. Returns sanitized ordered node traces, retrieval evidence, timings, model IDs, usage, and validation outcomes.

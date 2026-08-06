@@ -5,9 +5,9 @@ import logging
 from sqlalchemy import inspect, select
 
 from app.core.security import utc_now
-from app.db.models import IngestionJob, KnowledgeDocument
+from app.db.models import ChatRun, IngestionJob, KnowledgeDocument
 from app.db.readiness import RuntimeResources
-from app.domain.enums import DocumentStatus, IngestionState
+from app.domain.enums import ChatPhase, ChatResultType, ChatStatus, DocumentStatus, IngestionState
 
 logger = logging.getLogger(__name__)
 
@@ -35,5 +35,17 @@ def run_startup_maintenance(resources: RuntimeResources) -> None:
             if document is not None:
                 document.status = DocumentStatus.FAILED.value
                 document.error_code = "SERVICE_RESTARTED"
+        db.commit()
+    if not inspect(resources.engine).has_table("chat_runs"):
+        return
+    with resources.session_factory() as db:
+        runs = list(db.scalars(select(ChatRun).where(ChatRun.status == ChatStatus.RUNNING.value)))
+        for run in runs:
+            run.phase = ChatPhase.FAILED.value
+            run.status = ChatStatus.FAILED.value
+            run.result_type = ChatResultType.FAILED.value
+            run.error_code = "SERVICE_RESTARTED"
+            run.safe_error_message = "The service restarted. Send this message again."
+            run.finished_at = now
         db.commit()
     logger.info("Startup maintenance complete")

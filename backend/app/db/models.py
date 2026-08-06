@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Index,
     Integer,
+    Numeric,
     String,
     Text,
     UniqueConstraint,
@@ -166,3 +167,110 @@ class IngestionJob(Base):
     safe_error_message: Mapped[str | None] = mapped_column(String(240), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class StudioConversation(Base):
+    __tablename__ = "studio_conversations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version_id: Mapped[str] = mapped_column(
+        ForeignKey("agent_versions.id", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class ChatRun(Base):
+    __tablename__ = "chat_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version_id: Mapped[str] = mapped_column(
+        ForeignKey("agent_versions.id", ondelete="CASCADE"), index=True
+    )
+    conversation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("studio_conversations.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    surface: Mapped[str] = mapped_column(String(16))
+    phase: Mapped[str] = mapped_column(String(32), index=True)
+    status: Mapped[str] = mapped_column(String(16), index=True)
+    result_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    input_message_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    output_message_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    input_fingerprint: Mapped[str] = mapped_column(String(64))
+    online_model: Mapped[str] = mapped_column(String(100))
+    moderation_model: Mapped[str] = mapped_column(String(100))
+    embedding_model: Mapped[str] = mapped_column(String(100))
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    reasoning_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[float] = mapped_column(Numeric(12, 8), default=0)
+    retrieval_ms: Mapped[int] = mapped_column(Integer, default=0)
+    provider_ms: Mapped[int] = mapped_column(Integer, default=0)
+    total_ms: Mapped[int] = mapped_column(Integer, default=0)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    safe_error_message: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class Message(Base):
+    __tablename__ = "messages"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    conversation_id: Mapped[str] = mapped_column(
+        ForeignKey("studio_conversations.id", ondelete="CASCADE"), index=True
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("chat_runs.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    role: Mapped[str] = mapped_column(String(16))
+    content: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class MessageCitation(Base):
+    __tablename__ = "message_citations"
+    __table_args__ = (UniqueConstraint("message_id", "chunk_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    message_id: Mapped[str] = mapped_column(
+        ForeignKey("messages.id", ondelete="CASCADE"), index=True
+    )
+    chunk_id: Mapped[str] = mapped_column(String(160))
+    filename: Mapped[str] = mapped_column(String(255))
+    page_number: Mapped[int] = mapped_column(Integer)
+    excerpt: Mapped[str] = mapped_column(Text)
+    rank: Mapped[int] = mapped_column(Integer)
+
+
+class RunNodeTrace(Base):
+    __tablename__ = "run_node_traces"
+    __table_args__ = (UniqueConstraint("run_id", "sequence"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("chat_runs.id", ondelete="CASCADE"), index=True)
+    node_name: Mapped[str] = mapped_column(String(48))
+    sequence: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(16))
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    duration_ms: Mapped[int] = mapped_column(Integer)
+    safe_summary_json: Mapped[str] = mapped_column(Text)
+
+
+class SafetyEvent(Base):
+    __tablename__ = "safety_events"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("chat_runs.id", ondelete="CASCADE"), index=True)
+    version_id: Mapped[str] = mapped_column(
+        ForeignKey("agent_versions.id", ondelete="CASCADE"), index=True
+    )
+    category: Mapped[str] = mapped_column(String(48))
+    action: Mapped[str] = mapped_column(String(48))
+    detector: Mapped[str] = mapped_column(String(48))
+    safe_summary: Mapped[str] = mapped_column(String(240))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

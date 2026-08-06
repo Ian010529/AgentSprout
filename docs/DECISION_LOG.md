@@ -226,6 +226,20 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Decision: Reject a PDF as scanned/effectively empty when it has fewer than 100 extracted non-whitespace characters or fewer than 80% of pages contain text. Chunk each page independently with normalized paragraph-aware windows targeting 700 characters and 120-character overlap. Embed deterministic chunks in batches of 32 into one cosine `knowledge_chunks` collection, and activate a replacement only after every vector is stored.
 - Reason: Makes the no-OCR boundary measurable, prevents citations from crossing page boundaries, keeps provider calls bounded, and preserves the previous Ready document on any extraction or embedding failure.
 
+### D-043 — M4 runtime boundary and immediate privacy stop
+
+- Date: 2026-08-06
+- Decision: Implement the documented safety flow as a typed LangGraph `StateGraph` whose
+  nodes call a narrow provider adapter for moderation, structured intent classification,
+  and structured grounded generation. Run the deterministic PII guard synchronously in
+  the POST service before any raw input persistence or provider call; persist only a
+  completed sanitized blocked run/event for that branch. Allowed runs are persisted as
+  queued work and processed asynchronously with server-owned phases. Normalize assistant
+  citations against the exact retrieved chunk allowlist before storing or displaying them.
+- Reason: Keeps the privacy guarantee outside asynchronous failure windows, makes the
+  runtime graph inspectable in Teacher traces, and confines OpenAI SDK objects and raw
+  model output to the provider/runtime boundary.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

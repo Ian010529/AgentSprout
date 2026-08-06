@@ -108,6 +108,64 @@ export type KnowledgeUploadResponse = {
   duplicate: boolean;
 };
 
+export type ChatPhase =
+  | "QUEUED"
+  | "PRIVACY_CHECK"
+  | "MODERATION"
+  | "INTENT_CLASSIFICATION"
+  | "RETRIEVAL"
+  | "GENERATION"
+  | "OUTPUT_VALIDATION"
+  | "COMPLETED"
+  | "FAILED";
+export type ChatResultType = "ANSWERED" | "BLOCKED" | "GUIDED" | "REFUSED" | "FAILED";
+export type Citation = {
+  chunk_id: string;
+  filename: string;
+  page_number: number;
+  excerpt: string;
+};
+export type ChatResult = { type: ChatResultType; answer: string; citations: Citation[] };
+export type ChatRun = {
+  id: string;
+  conversation_id: string;
+  phase: ChatPhase;
+  status: "RUNNING" | "COMPLETED" | "FAILED";
+  display_stage: string;
+  result: ChatResult | null;
+  safe_error: string | null;
+  retryable: boolean;
+};
+export type ConversationMessage = {
+  id: string;
+  run_id: string | null;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  result_type: ChatResultType | null;
+  citations: Citation[];
+  created_at: string;
+};
+export type Conversation = {
+  id: string;
+  version_id: string;
+  messages: ConversationMessage[];
+  updated_at: string;
+};
+export type ChatTrace = {
+  run_id: string;
+  result_type: ChatResultType | null;
+  nodes: Array<{
+    node_name: string;
+    sequence: number;
+    status: string;
+    duration_ms: number;
+    safe_summary: Record<string, unknown>;
+  }>;
+  models: Record<"online" | "moderation" | "embedding", string>;
+  usage: Record<string, number>;
+  error_code: string | null;
+};
+
 type ErrorEnvelope = {
   error?: {
     code?: string;
@@ -297,4 +355,32 @@ export const studioApi = {
       method: "DELETE",
       csrfToken,
     }),
+  startRun: (
+    versionId: string,
+    message: string,
+    conversationId: string | null,
+    csrfToken: string,
+    idempotencyKey: string,
+  ) =>
+    requestJson<{
+      run_id: string;
+      conversation_id: string;
+      phase: ChatPhase;
+      poll_after_ms: number;
+    }>(`/api/v1/studio/versions/${versionId}/runs`, {
+      method: "POST",
+      body: { message, conversation_id: conversationId },
+      csrfToken,
+      idempotencyKey,
+    }),
+  getRun: (runId: string, signal?: AbortSignal) =>
+    requestJson<ChatRun>(`/api/v1/studio/runs/${runId}`, { signal }),
+  getConversation: (conversationId: string, signal?: AbortSignal) =>
+    requestJson<Conversation>(`/api/v1/studio/conversations/${conversationId}`, { signal }),
+  getLatestConversation: (versionId: string, signal?: AbortSignal) =>
+    requestJson<Conversation | null>(`/api/v1/studio/versions/${versionId}/conversation`, {
+      signal,
+    }),
+  getTrace: (runId: string, signal?: AbortSignal) =>
+    requestJson<ChatTrace>(`/api/v1/studio/runs/${runId}/trace`, { signal }),
 };

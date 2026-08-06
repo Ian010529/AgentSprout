@@ -9,6 +9,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from app.domain.enums import (
     AgentTemplate,
     AudienceAge,
+    ChatPhase,
+    ChatResultType,
+    ChatStatus,
     IngestionState,
     ResponseLength,
     Role,
@@ -192,3 +195,78 @@ class KnowledgeUploadResponse(StrictModel):
     job_id: str
     state: IngestionState
     duplicate: bool
+
+
+class ChatRunCreate(StrictModel):
+    message: Annotated[str, Field(min_length=1, max_length=1000)]
+    conversation_id: str | None = Field(default=None, min_length=36, max_length=36)
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        return clean_text(value)
+
+
+class ChatRunCreateResponse(StrictModel):
+    run_id: str
+    conversation_id: str
+    phase: ChatPhase
+    poll_after_ms: int = 500
+
+
+class CitationView(StrictModel):
+    chunk_id: str
+    filename: str
+    page_number: int
+    excerpt: str
+
+
+class ChatResultView(StrictModel):
+    type: ChatResultType
+    answer: str
+    citations: list[CitationView]
+
+
+class ChatRunView(StrictModel):
+    id: str
+    conversation_id: str
+    phase: ChatPhase
+    status: ChatStatus
+    display_stage: str
+    result: ChatResultView | None
+    safe_error: str | None
+    retryable: bool = False
+
+
+class ConversationMessageView(StrictModel):
+    id: str
+    run_id: str | None
+    role: Literal["USER", "ASSISTANT"]
+    content: str
+    result_type: ChatResultType | None
+    citations: list[CitationView]
+    created_at: datetime
+
+
+class ConversationView(StrictModel):
+    id: str
+    version_id: str
+    messages: list[ConversationMessageView]
+    updated_at: datetime
+
+
+class TraceNodeView(StrictModel):
+    node_name: str
+    sequence: int
+    status: str
+    duration_ms: int
+    safe_summary: dict[str, object]
+
+
+class ChatTraceView(StrictModel):
+    run_id: str
+    result_type: ChatResultType | None
+    nodes: list[TraceNodeView]
+    models: dict[str, str]
+    usage: dict[str, int | float]
+    error_code: str | None
