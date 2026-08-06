@@ -45,9 +45,12 @@ async function main() {
   await studio.getByRole("button", { name: "Create agent" }).click();
   await studio.getByRole("button", { name: "Create Ocean Explorer" }).click();
   await studio.waitForURL("**/studio/agents/**");
+  await studio.getByRole("button", { name: /Knowledge/ }).click();
   await studio.locator('input[type="file"]').setInputFiles(source);
   await studio.getByRole("button", { name: "Use this source" }).click();
+  await studio.getByRole("button", { name: /Test Open/ }).click({ timeout: 20_000 });
   await studio.getByText("Ready for grounded testing").waitFor({ timeout: 20_000 });
+  await studio.getByRole("button", { name: /Submit Ready/ }).click();
   await studio.getByRole("button", { name: "Submit v1 for review" }).click();
   await studio.waitForURL("**/studio/review/**");
   await studio.getByRole("button", { name: "Teacher" }).click();

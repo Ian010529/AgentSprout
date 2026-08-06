@@ -1,6 +1,10 @@
 import { TeacherEvaluation } from "@/components/teacher-evaluation";
 
-export default async function TeacherReviewPage({ params }: PageProps<"/studio/review/[agentId]">) {
+type TeacherReviewPageProps = {
+  params: Promise<{ agentId: string }>;
+};
+
+export default async function TeacherReviewPage({ params }: TeacherReviewPageProps) {
   const { agentId } = await params;
   return <TeacherEvaluation agentId={agentId} />;
 }
