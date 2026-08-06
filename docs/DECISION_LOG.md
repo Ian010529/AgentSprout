@@ -355,6 +355,18 @@ All decisions below were confirmed with the user before implementation. Changes 
   barrel improves internal ownership without broad consumer churn, while excluding the
   safety-critical chat transaction and order-sensitive CSS keeps this refactor proportionate.
 
+### D-054 — Inward backend dependencies with compatibility adapters
+
+- Date: 2026-08-06
+- Decision: Application contracts and errors are owned outside `app.api`; API modules retain
+  compatibility exports while services import the inward owners directly. Extract pure Chat
+  safety policy, shared model quota enforcement, Chat read projections, and the vector collection
+  identifier into neutral modules. Preserve the LangGraph, transaction, persistence, schema, and
+  endpoint behavior and do not introduce repository or orchestration frameworks.
+- Reason: The prior structure had no cycle but allowed services to depend on HTTP organization and
+  allowed Evaluation, Publication, and Review to consume unrelated feature internals. Correcting
+  ownership and dependency direction reduces change propagation without a risky runtime rewrite.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

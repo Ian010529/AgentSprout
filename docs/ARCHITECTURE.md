@@ -72,7 +72,13 @@ Local development uses the same relative layout under a configurable project dat
 ### Backend
 
 - FastAPI for HTTP contracts and validation.
-- Pydantic for request, response, and domain boundary schemas.
+- Pydantic application contracts and application errors are owned outside the HTTP package.
+  `app.api.schemas` and `app.api.errors` are compatibility/adaptation surfaces only. Routes may
+  depend on services and contracts; services must not depend on `app.api`.
+- Service modules own feature commands/workflows. Pure shared safety policy, shared model-call
+  quota enforcement, Chat read projections, and vector infrastructure identifiers have neutral
+  modules rather than being imported from another feature's implementation.
+- Pydantic provides request, response, and application boundary schemas.
 - SQLAlchemy and Alembic for SQLite persistence and schema evolution.
 - SQLite WAL mode with foreign keys enabled.
 - LangGraph for the chat/safety state machine.

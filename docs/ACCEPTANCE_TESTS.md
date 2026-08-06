@@ -242,6 +242,16 @@ Every `MUST` scenario below must pass. A failed privacy, authorization, state-ma
 - API and component tests, lint, typecheck, production build, and provider-boundary browser
   regression pass.
 
+### ACC-MOD-002 — Backend layer boundaries
+
+- No service module imports the API package; compatibility API schema/error imports remain valid.
+- Shared Chat safety, model quota, read projections, and vector infrastructure identifiers have
+  explicit owners with an acyclic import direction.
+- API schemas/errors, LangGraph execution, persistence, lifecycle, safety ordering, and visible
+  behavior remain unchanged.
+- Backend lint, format, type, tests, empty migration, frontend regressions, provider-boundary
+  browser lifecycle, and repository validation pass.
+
 ### ACC-DEMO-001 — Interview run
 
 - Prepared full flow completes in under five minutes, excluding the already-completed initial NOAA ingestion when explicitly stated.
