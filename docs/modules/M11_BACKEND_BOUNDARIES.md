@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress on 2026-08-06. The user authorized backend layering and decoupling after reviewing
+Accepted on 2026-08-06. The user authorized backend layering and decoupling after reviewing
 the M10 frontend boundary work.
 
 ## Problem
@@ -93,7 +93,6 @@ api compatibility exports -> domain/application contracts
 
 - [x] Existing dependency direction and baseline tests are audited.
 - [x] Scope, dependency rules, and behavior-preservation criteria are documented before code.
-- [ ] Service-to-API reverse dependencies are removed with compatibility preserved.
-- [ ] Chat policy, quota, queries, and vector infrastructure have explicit owners and no cycle.
-- [ ] All local and cloud verification passes with evidence recorded.
-
+- [x] Service-to-API reverse dependencies are removed with compatibility preserved.
+- [x] Chat policy, quota, queries, and vector infrastructure have explicit owners and no cycle.
+- [x] All local and cloud verification passes with evidence recorded.

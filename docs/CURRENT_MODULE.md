@@ -2,7 +2,7 @@
 
 - Current module: **M11 — Backend Layer Boundaries**
 - Module document: [`docs/modules/M11_BACKEND_BOUNDARIES.md`](modules/M11_BACKEND_BOUNDARIES.md)
-- Status: **In progress on 2026-08-06**
+- Status: **Accepted on 2026-08-06**
 - Implementation authorization: **Confirmed by the user on 2026-08-06**
 - Next module after acceptance: **Project handoff**
 
@@ -20,4 +20,5 @@ M9 local evidence is recorded in
 [`docs/evidence/M9_TASK_FIRST_UX_ACCEPTANCE.md`](evidence/M9_TASK_FIRST_UX_ACCEPTANCE.md).
 M10 evidence is recorded in
 [`docs/evidence/M10_API_CLIENT_BOUNDARIES_ACCEPTANCE.md`](evidence/M10_API_CLIENT_BOUNDARIES_ACCEPTANCE.md).
-M11 evidence will be recorded after its acceptance gate passes.
+M11 evidence is recorded in
+[`docs/evidence/M11_BACKEND_BOUNDARIES_ACCEPTANCE.md`](evidence/M11_BACKEND_BOUNDARIES_ACCEPTANCE.md).
