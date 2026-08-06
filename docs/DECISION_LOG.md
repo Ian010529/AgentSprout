@@ -344,6 +344,17 @@ All decisions below were confirmed with the user before implementation. Changes 
   inside repeated work surfaces. This obscured the actual product-building and Agent-usage tasks,
   and made a single sample appear to define the whole platform.
 
+### D-053 — Stable API entry point with separated internal ownership
+
+- Date: 2026-08-06
+- Decision: Keep `frontend/src/lib/api.ts` as the stable consumer entry point while moving
+  contract types, shared request/error behavior, system endpoints, Studio endpoints, and public
+  endpoints into dedicated internal modules. Preserve every existing named export and request
+  behavior. Do not combine this change with backend-service or stylesheet reorganization.
+- Reason: The previous file coupled concerns with different reasons to change. A compatibility
+  barrel improves internal ownership without broad consumer churn, while excluding the
+  safety-critical chat transaction and order-sensitive CSS keeps this refactor proportionate.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

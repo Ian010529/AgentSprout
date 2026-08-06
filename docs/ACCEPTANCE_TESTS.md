@@ -233,6 +233,15 @@ Every `MUST` scenario below must pass. A failed privacy, authorization, state-ma
 - Backend Docker image builds.
 - Browser console has no application errors in accepted flows.
 
+### ACC-MOD-001 — Frontend API module boundaries
+
+- `@/lib/api` preserves its existing named exports and request behavior.
+- API contract types, shared transport/error normalization, and system, Studio, and public
+  endpoints have separate internal owners with no import cycle.
+- No component, route, backend, stylesheet, persistence, or deployment behavior changes.
+- API and component tests, lint, typecheck, production build, and provider-boundary browser
+  regression pass.
+
 ### ACC-DEMO-001 — Interview run
 
 - Prepared full flow completes in under five minutes, excluding the already-completed initial NOAA ingestion when explicitly stated.

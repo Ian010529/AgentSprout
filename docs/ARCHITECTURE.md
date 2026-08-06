@@ -61,7 +61,12 @@ Local development uses the same relative layout under a configurable project dat
 - Next.js with TypeScript and React.
 - assistant-ui components are reused selectively for conversation primitives.
 - Do not fork a full agent-chat repository.
-- A typed API client owns transport, error normalization, CSRF headers, and polling.
+- The stable `frontend/src/lib/api.ts` entry point re-exports API contract types and the system,
+  Studio, and public clients. Its internal modules separate type-only contracts, shared transport
+  and safe-error normalization, and each endpoint group. Endpoint modules may depend on transport
+  and contract types; transport may depend on contract types; neither lower layer depends on an
+  endpoint module or React component.
+- The typed API client owns transport, error normalization, CSRF headers, and polling.
 - Server state comes from the API; no duplicate client-side source of truth for lifecycle or job state.
 
 ### Backend
