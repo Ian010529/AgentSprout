@@ -2,7 +2,7 @@
 
 ## Status
 
-Pending M3 acceptance.
+In progress after M3 acceptance on 2026-08-06.
 
 ## Vertical outcome
 

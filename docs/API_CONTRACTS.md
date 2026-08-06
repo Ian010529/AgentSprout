@@ -181,6 +181,28 @@ The M2 aggregate is:
 
 Returns full Studio configuration, knowledge status, reflection, lifecycle state, latest evaluation summary, reviews, and allowed actions.
 
+From M3 onward, `knowledge_status` is one of `NOT_ADDED`, `PROCESSING`, `READY`, or `FAILED`, and the response includes:
+
+```json
+{
+  "knowledge": {
+    "active_document": {
+      "id":"uuid",
+      "original_filename":"ocean-literacy-2024.pdf",
+      "status":"READY",
+      "page_count":28,
+      "chunk_count":42,
+      "sha256":"lowercase-hex",
+      "embedding_model":"text-embedding-3-small",
+      "ready_at":"..."
+    },
+    "latest_job": null
+  }
+}
+```
+
+`active_document` remains the prior Ready document while a replacement is processing or fails. `latest_job` uses the ingestion-job response shape below and is present for the most recent staged upload.
+
 ### `PATCH /studio/versions/{version_id}`
 
 Student-only, Draft-only. Partial editable fields from `docs/PRD.md`. Unknown or protected fields are rejected, not ignored.
@@ -253,7 +275,7 @@ Response:
 
 ### `POST /studio/ingestion-jobs/{job_id}/retry`
 
-Student-only, failed job only, Draft-only. Creates a new attempt without duplicating chunks. Returns `202`.
+Student-only, failed job only, Draft-only. Creates a new job attempt for the same staged document without duplicating chunks. Returns `202` using the upload response shape with the new `job_id` and `duplicate:false`.
 
 ### `DELETE /studio/versions/{version_id}/knowledge/{document_id}`
 

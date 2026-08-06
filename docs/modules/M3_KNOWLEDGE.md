@@ -2,7 +2,7 @@
 
 ## Status
 
-Pending M2 acceptance.
+Accepted on 2026-08-06.
 
 ## Vertical outcome
 
@@ -101,10 +101,37 @@ The Student uploads the official NOAA PDF from the Workspace, sees real asynchro
 
 ## Exit gate
 
-- [ ] NOAA source record is complete and license rechecked.
-- [ ] Real upload-to-Ready browser flow passes.
-- [ ] Real embedding and page-aware retrieval smoke tests pass.
-- [ ] Failure/retry/restart/preservation tests pass.
-- [ ] M1–M2 regressions pass.
-- [ ] No raw upload is public or outside validated data paths.
-- [ ] Evidence is recorded before moving to M4.
+- [x] NOAA source record is complete and license rechecked.
+- [x] Real upload-to-Ready browser flow passes.
+- [x] Real embedding and page-aware retrieval smoke tests pass.
+- [x] Failure/retry/restart/preservation tests pass.
+- [x] M1–M2 regressions pass.
+- [x] No raw upload is public or outside validated data paths.
+- [x] Evidence is recorded before moving to M4.
+
+## Acceptance evidence
+
+Recorded on 2026-08-06:
+
+- Source: `scripts/download_noaa_source.py` reproduced the unchanged 1,162,058-byte,
+  13-page NOAA Ocean Service Version 3.2 PDF. SHA-256 is
+  `029d79e6d17e506cc35d3fb2bdc5b676689fcbfee543df9c340feef0eaeb794c`;
+  all pages contained extractable text. The NOAA repository rights record was rechecked as
+  CC0 Public Domain. The PDF remains gitignored.
+- Live provider: `RUN_LIVE_TESTS=1 backend/.venv/bin/python scripts/live_m3_smoke.py`
+  completed in 9,128 ms at `2026-08-06T02:02:34.107476+00:00` using
+  `text-embedding-3-small`. Three provider calls used 7,368 input/total tokens. The known
+  climate question returned four page-aware results from pages 9, 9, 9, and 7 with cosine
+  similarities 0.6709, 0.6250, 0.6208, and 0.6096.
+- Browser: the provider-boundary Playwright flow observed `UPLOADED`, `EXTRACTING`,
+  `CHUNKING`, `EMBEDDING`, and `READY`, with zero console errors. It also verified refresh
+  restoration, failed scanned-PDF replacement preserving the previous Ready source, and
+  Teacher read-only behavior. Reviewed screenshots were written only to `/tmp`.
+- Backend: Ruff format and lint passed; Pytest passed 20 tests; Pyright reported zero
+  errors; `pip check` reported no broken requirements.
+- Frontend: ESLint and TypeScript passed; Vitest passed 16 tests across 6 files; the
+  Next.js production build completed successfully.
+- Safety and persistence: integration tests cover invalid MIME/path, size/page/encryption/
+  scan limits, duplicate and partial-batch cleanup, retry idempotency, restart recovery,
+  staged replacement, exact Chroma filtering, and Draft deletion. `git diff --check`,
+  ignored-runtime checks, and the tracked-diff secret scan passed before transition.

@@ -120,7 +120,7 @@ Fixtures include:
 - valid TXT
 - valid Markdown
 - small text PDF with known page text
-- unchanged NOAA CC0 PDF for live acceptance
+- unchanged official NOAA accessible Version 3.2 PDF for live acceptance
 - encrypted PDF
 - scanned/image-only PDF
 - empty file

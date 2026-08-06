@@ -17,11 +17,16 @@ from app.core.request_id import RequestIdMiddleware
 from app.core.startup import run_startup_maintenance
 from app.db.engine import create_session_factory, create_sqlite_engine
 from app.db.readiness import RuntimeResources, create_chroma_client
+from app.providers.contracts import EmbeddingProvider
+from app.providers.openai_embeddings import OpenAIEmbeddingProvider
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(
+    settings: Settings | None = None,
+    embedding_provider: EmbeddingProvider | None = None,
+) -> FastAPI:
     configure_logging()
     runtime_settings = settings or get_settings()
     runtime_settings.create_runtime_directories()
@@ -31,11 +36,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         engine=engine,
         chroma=create_chroma_client(runtime_settings),
         session_factory=create_session_factory(engine),
+        embedding_provider=embedding_provider or OpenAIEmbeddingProvider(runtime_settings),
     )
 
     @asynccontextmanager
     async def lifespan(_application: FastAPI) -> AsyncGenerator[None]:
-        run_startup_maintenance()
+        run_startup_maintenance(resources)
         yield
 
     application = FastAPI(
@@ -46,6 +52,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     application.state.resources = resources
+    application.state.ingestion_tasks = set()
+    application.state.ingestion_job_ids = set()
     application.add_middleware(RequestIdMiddleware)
     application.add_middleware(
         CORSMiddleware,

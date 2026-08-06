@@ -6,6 +6,10 @@ from typing import Protocol
 from app.core.config import Settings
 
 
+class ProviderTimeoutError(Exception):
+    """Provider request exceeded the configured timeout."""
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderModels:
     online: str
@@ -28,3 +32,10 @@ class ProviderAdapter(Protocol):
 
     @property
     def models(self) -> ProviderModels: ...
+
+
+class EmbeddingProvider(Protocol):
+    @property
+    def model(self) -> str: ...
+
+    def embed(self, texts: list[str]) -> list[list[float]]: ...

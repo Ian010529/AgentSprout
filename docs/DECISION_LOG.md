@@ -208,6 +208,24 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Decision: Use an opaque `agentsprout_session` cookie backed by an HMAC token hash, with an 8-hour server expiry. Rotate the CSRF token on session restoration and keep the raw CSRF value in frontend memory only. Permit five failed access-code attempts per keyed client-IP hash in 15 minutes. Retain Agent-creation idempotency records for 24 hours and reject key reuse with a different request hash.
 - Reason: Implements the approved demo gate without browser-stored credentials, raw IP storage, or ambiguous duplicate creation behavior.
 
+### D-040 — M3 NOAA source distribution
+
+- Date: 2026-08-06
+- Decision: Keep the 11.34 MB NOAA PDF out of Git and commit a checksum-locked download script instead. The script downloads the unchanged repository file into the gitignored `examples/knowledge` directory and rejects any byte change against NOAA's published SHA-512.
+- Reason: Preserves an authoritative, reproducible source without adding a large binary to the interview repository; the product still ingests the original file through the real upload path.
+
+### D-041 — M3 accessible NOAA source supersedes D-040 download target
+
+- Date: 2026-08-06
+- Decision: Keep the verified download-script strategy, but download NOAA Ocean Service's official accessible Version 3.2 PDF instead of the byte-distinct Institutional Repository PDF. Lock the accessible file to SHA-256 `029d79e6d17e506cc35d3fb2bdc5b676689fcbfee543df9c340feef0eaeb794c`. D-040 remains the history of the rejected target and is superseded only for the direct download URL and checksum.
+- Reason: The repository file is the same 13-page 2024 guide and has the authoritative CC0 record, but 11 of its 13 pages have no extractable text. The official Ocean Service copy has extractable text on all 13 pages and therefore satisfies both the unchanged official-source requirement and the approved no-OCR/scanned-file rejection rule. The repository record remains the title, attribution, DOI, and rights authority.
+
+### D-042 — M3 extraction, chunking, and embedding mechanics
+
+- Date: 2026-08-06
+- Decision: Reject a PDF as scanned/effectively empty when it has fewer than 100 extracted non-whitespace characters or fewer than 80% of pages contain text. Chunk each page independently with normalized paragraph-aware windows targeting 700 characters and 120-character overlap. Embed deterministic chunks in batches of 32 into one cosine `knowledge_chunks` collection, and activate a replacement only after every vector is stored.
+- Reason: Makes the no-OCR boundary measurable, prevents citations from crossing page boundaries, keeps provider calls bounded, and preserves the previous Ready document on any extraction or embedding failure.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

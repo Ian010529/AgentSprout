@@ -13,6 +13,10 @@ const studioMocks = vi.hoisted(() => ({
   getAgent: vi.fn(),
   getVersion: vi.fn(),
   updateVersion: vi.fn(),
+  uploadKnowledge: vi.fn(),
+  getIngestionJob: vi.fn(),
+  retryIngestion: vi.fn(),
+  deleteKnowledge: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
@@ -37,6 +41,7 @@ const version = {
   custom_instructions: "",
   active_document_id: null,
   knowledge_status: "NOT_ADDED",
+  knowledge: { active_document: null, latest_job: null },
   allowed_actions: ["EDIT_DRAFT"],
   created_at: "2026-08-06T10:00:00Z",
   updated_at: "2026-08-06T10:00:00Z",

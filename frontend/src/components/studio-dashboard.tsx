@@ -248,7 +248,7 @@ export function StudioDashboard() {
                   <div className="agent-card-top"><span>v{agent.current_version.number}</span><strong>{agent.current_version.state}</strong></div>
                   <h3>{agent.display_name}</h3>
                   <p>{agent.next_action}</p>
-                  <div className="knowledge-line"><span aria-hidden="true" /> Knowledge not added</div>
+                  <div className={`knowledge-line knowledge-line--${agent.current_version.knowledge_status.toLowerCase()}`}><span aria-hidden="true" /> Knowledge {agent.current_version.knowledge_status.toLowerCase().replace("_", " ")}</div>
                   <Link href={`/studio/agents/${agent.id}`}>{isStudent ? "Continue Draft →" : "View Draft →"}</Link>
                 </article>
               ))}

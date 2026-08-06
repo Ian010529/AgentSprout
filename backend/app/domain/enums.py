@@ -33,3 +33,22 @@ class ResponseLength(StrEnum):
 
 class AgentTemplate(StrEnum):
     KNOWLEDGE_EXPLORER = "KNOWLEDGE_EXPLORER"
+
+
+class IngestionState(StrEnum):
+    UPLOADED = "UPLOADED"
+    EXTRACTING = "EXTRACTING"
+    CHUNKING = "CHUNKING"
+    EMBEDDING = "EMBEDDING"
+    READY = "READY"
+    FAILED = "FAILED"
+
+
+class DocumentStatus(StrEnum):
+    UPLOADED = "UPLOADED"
+    EXTRACTING = "EXTRACTING"
+    CHUNKING = "CHUNKING"
+    EMBEDDING = "EMBEDDING"
+    READY = "READY"
+    FAILED = "FAILED"
+    RETIRED = "RETIRED"

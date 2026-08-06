@@ -31,6 +31,7 @@ backend/data/
 *.sqlite3
 
 # Test and local artifacts
+examples/knowledge/*.pdf
 .coverage
 coverage.xml
 playwright-report/

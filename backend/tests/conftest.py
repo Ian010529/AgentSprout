@@ -13,6 +13,23 @@ from app.db.migrations import alembic_config
 from app.main import create_app
 
 
+class FakeEmbeddingProvider:
+    model = "text-embedding-3-small"
+
+    def __init__(self) -> None:
+        self.calls: list[list[str]] = []
+        self.fail_next = False
+        self.fail_on_call: int | None = None
+
+    def embed(self, texts: list[str]) -> list[list[float]]:
+        self.calls.append(texts)
+        if self.fail_next or self.fail_on_call == len(self.calls):
+            self.fail_next = False
+            raise TimeoutError("synthetic provider timeout")
+        terms = ("ocean", "climate", "current", "temperature", "coral", "whale")
+        return [[float(text.lower().count(term)) + 0.001 for term in terms] for text in texts]
+
+
 @pytest.fixture
 def settings(tmp_path: Path) -> Settings:
     return Settings(  # pyright: ignore[reportCallIssue]
@@ -35,7 +52,12 @@ def migrate(settings: Settings) -> None:
 
 
 @pytest.fixture
-def client(settings: Settings) -> Iterator[TestClient]:
+def embedding_provider() -> FakeEmbeddingProvider:
+    return FakeEmbeddingProvider()
+
+
+@pytest.fixture
+def client(settings: Settings, embedding_provider: FakeEmbeddingProvider) -> Iterator[TestClient]:
     migrate(settings)
-    with TestClient(create_app(settings)) as test_client:
+    with TestClient(create_app(settings, embedding_provider=embedding_provider)) as test_client:
         yield test_client

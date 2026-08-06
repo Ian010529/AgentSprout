@@ -5,6 +5,14 @@ export type Role = "STUDENT" | "TEACHER";
 export type AudienceAge = "AGE_7_11" | "AGE_12_17";
 export type Tone = "FRIENDLY" | "CURIOUS" | "COACH_LIKE";
 export type ResponseLength = "SHORT" | "BALANCED";
+export type KnowledgeStatus = "NOT_ADDED" | "PROCESSING" | "READY" | "FAILED";
+export type IngestionState =
+  | "UPLOADED"
+  | "EXTRACTING"
+  | "CHUNKING"
+  | "EMBEDDING"
+  | "READY"
+  | "FAILED";
 
 export type HealthResponse = { status: "ok"; service: "agentsprout-api" };
 export type ReadinessCheck = "ok" | "failed";
@@ -35,7 +43,7 @@ export type VersionSummary = {
   id: string;
   number: number;
   state: "DRAFT";
-  knowledge_status: "NOT_ADDED";
+  knowledge_status: KnowledgeStatus;
 };
 export type AgentSummary = {
   id: string;
@@ -59,10 +67,45 @@ export type VersionDetail = AgentFields & {
   version_number: number;
   state: "DRAFT";
   active_document_id: string | null;
-  knowledge_status: "NOT_ADDED";
+  knowledge_status: KnowledgeStatus;
+  knowledge: KnowledgeView;
   allowed_actions: string[];
   created_at: string;
   updated_at: string;
+};
+
+export type IngestionJob = {
+  id: string;
+  document_id: string;
+  state: IngestionState;
+  progress: { completed: number; total: number };
+  safe_error: string | null;
+  error_code: string | null;
+  retryable: boolean;
+  updated_at: string;
+};
+
+export type KnowledgeDocument = {
+  id: string;
+  original_filename: string;
+  status: string;
+  page_count: number | null;
+  chunk_count: number | null;
+  sha256: string;
+  embedding_model: string;
+  ready_at: string | null;
+};
+
+export type KnowledgeView = {
+  active_document: KnowledgeDocument | null;
+  latest_job: IngestionJob | null;
+};
+
+export type KnowledgeUploadResponse = {
+  document_id: string;
+  job_id: string;
+  state: IngestionState;
+  duplicate: boolean;
 };
 
 type ErrorEnvelope = {
@@ -161,6 +204,36 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
   }
 }
 
+async function requestForm<T>(
+  path: string,
+  form: FormData,
+  csrfToken: string,
+  idempotencyKey: string,
+): Promise<T> {
+  const timeoutSignal = AbortSignal.timeout(20_000);
+  try {
+    const response = await fetch(`${apiBaseUrl()}${path}`, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "X-CSRF-Token": csrfToken,
+        "Idempotency-Key": idempotencyKey,
+      },
+      credentials: "include",
+      body: form,
+      signal: timeoutSignal,
+    });
+    if (!response.ok) throw await parseError(response);
+    return (await response.json()) as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (error instanceof DOMException && ["TimeoutError", "AbortError"].includes(error.name)) {
+      throw new ApiError("The upload timed out. Try again.", null, "TIMEOUT", null, true);
+    }
+    throw new ApiError("The backend is offline or unreachable.", null, "NETWORK_ERROR", null, true);
+  }
+}
+
 export const systemApi = {
   health: (signal?: AbortSignal) => requestJson<HealthResponse>("/api/v1/health", { signal }),
   readiness: (signal?: AbortSignal) =>
@@ -200,6 +273,28 @@ export const studioApi = {
     requestJson<VersionDetail>(`/api/v1/studio/versions/${versionId}`, {
       method: "PATCH",
       body: payload,
+      csrfToken,
+    }),
+  uploadKnowledge: (versionId: string, file: File, csrfToken: string, idempotencyKey: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    return requestForm<KnowledgeUploadResponse>(
+      `/api/v1/studio/versions/${versionId}/knowledge`,
+      form,
+      csrfToken,
+      idempotencyKey,
+    );
+  },
+  getIngestionJob: (jobId: string, signal?: AbortSignal) =>
+    requestJson<IngestionJob>(`/api/v1/studio/ingestion-jobs/${jobId}`, { signal }),
+  retryIngestion: (jobId: string, csrfToken: string) =>
+    requestJson<KnowledgeUploadResponse>(`/api/v1/studio/ingestion-jobs/${jobId}/retry`, {
+      method: "POST",
+      csrfToken,
+    }),
+  deleteKnowledge: (versionId: string, documentId: string, csrfToken: string) =>
+    requestJson<void>(`/api/v1/studio/versions/${versionId}/knowledge/${documentId}`, {
+      method: "DELETE",
       csrfToken,
     }),
 };

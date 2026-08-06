@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.db.migrations import migrations_are_current
+from app.providers.contracts import EmbeddingProvider
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,6 +21,7 @@ class RuntimeResources:
     engine: Engine
     chroma: ClientAPI
     session_factory: sessionmaker[Session]
+    embedding_provider: EmbeddingProvider
 
 
 def create_chroma_client(settings: Settings) -> ClientAPI:

@@ -22,6 +22,7 @@ from app.core.config import Settings
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import Agent, AgentVersion, AuditEvent, DemoSession, IdempotencyRecord
 from app.domain.enums import AudienceAge, ResponseLength, Role, Tone, VersionState
+from app.services.knowledge import get_knowledge_view
 
 CREATE_SCOPE = "CREATE_AGENT"
 
@@ -40,16 +41,18 @@ def _next_action(role: str, state: str) -> str:
     return "No action available"
 
 
-def _version_summary(version: AgentVersion) -> VersionSummary:
+def _version_summary(db: Session, version: AgentVersion) -> VersionSummary:
+    knowledge_status, _ = get_knowledge_view(db, version)
     return VersionSummary(
         id=version.id,
         number=version.version_number,
         state=VersionState(version.state),
-        knowledge_status="NOT_ADDED",
+        knowledge_status=knowledge_status,
     )
 
 
-def _version_detail(version: AgentVersion, role: str) -> VersionDetail:
+def _version_detail(db: Session, version: AgentVersion, role: str) -> VersionDetail:
+    knowledge_status, knowledge = get_knowledge_view(db, version)
     return VersionDetail(
         id=version.id,
         agent_id=version.agent_id,
@@ -65,7 +68,8 @@ def _version_detail(version: AgentVersion, role: str) -> VersionDetail:
         response_length=ResponseLength(version.response_length),
         custom_instructions=version.custom_instructions,
         active_document_id=version.active_document_id,
-        knowledge_status="NOT_ADDED",
+        knowledge_status=knowledge_status,
+        knowledge=knowledge,
         allowed_actions=_allowed_actions(role, version.state),
         created_at=as_utc(version.created_at),
         updated_at=as_utc(version.updated_at),
@@ -92,7 +96,7 @@ def _aggregate(
         slug=agent.slug,
         current_draft_version_id=agent.current_draft_version_id,
         published_version_id=agent.published_version_id,
-        versions=[_version_summary(version) for version in visible_versions],
+        versions=[_version_summary(db, version) for version in visible_versions],
         allowed_actions=_allowed_actions(role, current.state),
     )
 
@@ -134,7 +138,7 @@ def list_agents(
             AgentSummary(
                 id=agent.id,
                 display_name=agent.display_name,
-                current_version=_version_summary(version),
+                current_version=_version_summary(db, version),
                 allowed_actions=_allowed_actions(session.role, version.state),
                 next_action=_next_action(session.role, version.state),
             )
@@ -156,7 +160,7 @@ def get_version(db: Session, session: DemoSession, version_id: str) -> VersionDe
     agent = db.get(Agent, version.agent_id)
     if agent is None or agent.deleted_at is not None:
         raise ApiError(404, "VERSION_NOT_FOUND", "The Agent version was not found.")
-    return _version_detail(version, session.role)
+    return _version_detail(db, version, session.role)
 
 
 def create_agent(
@@ -235,7 +239,7 @@ def create_agent(
     db.add_all([agent, version])
     response = AgentCreateResponse(
         agent=_aggregate(db, agent, session.role, [version]),
-        version=_version_detail(version, session.role),
+        version=_version_detail(db, version, session.role),
     )
     db.add_all(
         [
@@ -302,4 +306,4 @@ def update_version(
         )
     )
     db.commit()
-    return _version_detail(version, session.role)
+    return _version_detail(db, version, session.role)

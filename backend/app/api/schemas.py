@@ -6,7 +6,17 @@ from typing import Annotated, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.domain.enums import AgentTemplate, AudienceAge, ResponseLength, Role, Tone, VersionState
+from app.domain.enums import (
+    AgentTemplate,
+    AudienceAge,
+    IngestionState,
+    ResponseLength,
+    Role,
+    Tone,
+    VersionState,
+)
+
+KnowledgeStatus = Literal["NOT_ADDED", "PROCESSING", "READY", "FAILED"]
 
 
 def clean_text(value: str) -> str:
@@ -102,7 +112,7 @@ class VersionSummary(StrictModel):
     id: str
     number: int
     state: VersionState
-    knowledge_status: Literal["NOT_ADDED"] = "NOT_ADDED"
+    knowledge_status: KnowledgeStatus = "NOT_ADDED"
 
 
 class AgentSummary(StrictModel):
@@ -127,13 +137,46 @@ class AgentAggregate(StrictModel):
     allowed_actions: list[str]
 
 
+class JobProgress(StrictModel):
+    completed: int
+    total: int
+
+
+class IngestionJobView(StrictModel):
+    id: str
+    document_id: str
+    state: IngestionState
+    progress: JobProgress
+    safe_error: str | None
+    error_code: str | None
+    retryable: bool
+    updated_at: datetime
+
+
+class KnowledgeDocumentView(StrictModel):
+    id: str
+    original_filename: str
+    status: str
+    page_count: int | None
+    chunk_count: int | None
+    sha256: str
+    embedding_model: str
+    ready_at: datetime | None
+
+
+class KnowledgeView(StrictModel):
+    active_document: KnowledgeDocumentView | None
+    latest_job: IngestionJobView | None
+
+
 class VersionDetail(AgentFields):
     id: str
     agent_id: str
     version_number: int
     state: VersionState
     active_document_id: str | None
-    knowledge_status: Literal["NOT_ADDED"] = "NOT_ADDED"
+    knowledge_status: KnowledgeStatus = "NOT_ADDED"
+    knowledge: KnowledgeView
     allowed_actions: list[str]
     created_at: datetime
     updated_at: datetime
@@ -142,3 +185,10 @@ class VersionDetail(AgentFields):
 class AgentCreateResponse(StrictModel):
     agent: AgentAggregate
     version: VersionDetail
+
+
+class KnowledgeUploadResponse(StrictModel):
+    document_id: str
+    job_id: str
+    state: IngestionState
+    duplicate: bool

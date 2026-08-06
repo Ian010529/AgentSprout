@@ -56,6 +56,7 @@ def require_mutation_session(
 
 DatabaseSession = Annotated[Session, Depends(database)]
 RuntimeSettings = Annotated[Settings, Depends(settings)]
+RuntimeResource = Annotated[RuntimeResources, Depends(resources)]
 CurrentSession = Annotated[DemoSession, Depends(require_session)]
 MutationSession = Annotated[DemoSession, Depends(require_mutation_session)]
 OriginCheck = Annotated[None, Depends(require_origin)]
