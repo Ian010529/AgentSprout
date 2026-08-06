@@ -1,0 +1,55 @@
+name: Manual live OpenAI smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_full_evaluation:
+        description: Run the costlier 16-case teacher evaluation
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  live-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: live-demo
+    env:
+      RUN_LIVE_TESTS: "1"
+      APP_ENV: test
+      ALLOWED_ORIGINS: '["http://testserver"]'
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      STUDIO_ACCESS_CODE: live-workflow-access
+      ADMIN_RESET_TOKEN: live-workflow-admin-token
+      SESSION_SECRET: live-workflow-session-secret-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.13
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - name: Install locked backend
+        run: |
+          python -m pip install --upgrade "pip==25.3"
+          python -m pip install --requirement backend/requirements.lock
+          python -m pip install --editable backend --no-deps
+      - name: Download the checksum-locked NOAA source
+        run: python scripts/download_noaa_source.py
+      - name: Verify required live secret without printing it
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "Configure OPENAI_API_KEY in the live-demo GitHub environment."
+            exit 1
+          fi
+          touch .env
+      - name: Run embedding and grounded runtime smoke
+        run: |
+          python scripts/live_m3_smoke.py
+          python scripts/live_m4_smoke.py
+      - name: Run optional full evaluation
+        if: inputs.run_full_evaluation
+        run: python scripts/live_m5_evaluation.py

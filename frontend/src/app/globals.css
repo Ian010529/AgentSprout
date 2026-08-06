@@ -1318,7 +1318,8 @@ select:disabled {
 @media (max-width: 1000px) { .iteration-form { grid-template-columns: 1fr 1fr; } .comparison-deltas { grid-template-columns: 1fr 1fr; } }
 
 /* Published Agent — responsive, content-first, and deliberately isolated from Studio chrome. */
-.public-shell { min-height: 100vh; background: var(--paper); color: var(--ink); }
+.public-shell { --muted: #52666e; min-height: 100vh; background: var(--paper); color: var(--ink); }
+.public-shell .eyebrow { color: #146b64; }
 .public-nav { min-height: 72px; padding: 0 max(24px, calc((100vw - 1180px) / 2)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--navy-950); color: var(--paper); }
 .public-nav > p { color: rgba(245, 240, 229, .62); font-size: .65rem; text-transform: uppercase; letter-spacing: .11em; }
 .public-brand { display: inline-flex; align-items: center; gap: 10px; font: 600 1.08rem var(--display); text-decoration: none; }

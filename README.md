@@ -8,10 +8,12 @@ This project is inspired by publicly described needs in AI education and a publi
 
 ## Current status
 
-**M7: Publication and Public Agent** is in acceptance. The local vertical demo now covers
+**M8: Cloud Deployment and Product Polish** is in progress. M1–M7 are accepted, and the local vertical demo covers
 Studio access, Agent creation, real ingestion/RAG, child-safety routes, the 16-case Teacher
 evaluation, immutable v1/v2 comparison, approval, publishing, anonymous public chat, and
-reset protection. Cloud deployment remains M8 scope. See
+reset protection. Production Docker, deployment configuration, repository validation, and
+GitHub workflows are locally verified; live GitHub/Vercel/Railway acceptance still requires
+explicit account and cost authorization. See
 [`docs/CURRENT_MODULE.md`](docs/CURRENT_MODULE.md).
 
 ## Five-minute demo outcome
@@ -115,6 +117,29 @@ pnpm build
 ```
 
 No `.env`, API key, access code, runtime database, vector data, upload, or log belongs in Git.
+
+CI additionally runs the complete provider-boundary browser lifecycle in Chromium and
+mobile WebKit, axe accessibility checks, an empty migration, Git history/runtime-data scans,
+Docker build/start/restart checks, and documentation-link validation. Real OpenAI smoke tests
+are a separate manually dispatched workflow so ordinary pushes do not spend provider tokens.
+
+## Production container
+
+Build the same backend image used by Railway from the repository root:
+
+```bash
+docker build --tag agentsprout-api:local .
+```
+
+The entrypoint migrates the mounted database before startup and runs the application as an
+unprivileged user. Production requires one persistent volume at `/app/data`, one backend
+replica, exact HTTPS CORS origin configuration, and secrets entered outside Git. See the
+[deployment plan](docs/DEPLOYMENT.md) for the verified Railway/Vercel settings, current plan
+limits, and cost boundary.
+
+Production browser traffic uses Vercel's same-origin `/api-proxy` rewrite to Railway so the
+Studio session does not depend on third-party cookie acceptance. Local development continues
+to call the backend directly.
 
 ## Documentation map
 

@@ -13,6 +13,8 @@ backend/.pyright/
 backend/**/__pycache__/
 backend/**/*.py[cod]
 backend/*.egg-info/
+**/__pycache__/
+**/*.py[cod]
 
 # Node / Next.js
 frontend/node_modules/

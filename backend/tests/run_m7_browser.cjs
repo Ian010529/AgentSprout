@@ -1,9 +1,12 @@
 const { chromium, webkit } = require("playwright");
+const AxeBuilder = require("@axe-core/playwright").default;
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "../..");
 const source = path.join(root, "examples/knowledge/ocean-literacy-2024.pdf");
 const accessCode = process.env.STUDIO_ACCESS_CODE;
+const frontendBaseUrl = (process.env.FRONTEND_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
+const backendBaseUrl = (process.env.BACKEND_BASE_URL || "http://localhost:8000").replace(/\/$/, "");
 
 if (!accessCode) throw new Error("STUDIO_ACCESS_CODE is required for browser acceptance");
 
@@ -28,15 +31,14 @@ async function ask(page, message) {
 
 async function main() {
   const consoleErrors = [];
-  const chrome = await chromium.launch({
-    headless: true,
-    executablePath: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  });
-  const studio = await chrome.newPage({ viewport: { width: 1440, height: 1100 } });
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
+  const chrome = await chromium.launch({ headless: true, ...(executablePath ? { executablePath } : {}) });
+  const studioContext = await chrome.newContext({ viewport: { width: 1440, height: 1100 } });
+  const studio = await studioContext.newPage();
   studio.on("console", (message) => {
     if (isUnexpectedConsoleError(message)) consoleErrors.push(`chromium:${message.text()}`);
   });
-  await studio.goto("http://localhost:3000/access");
+  await studio.goto(`${frontendBaseUrl}/access`);
   await studio.getByLabel("Access code").fill(accessCode);
   await studio.getByRole("button", { name: "Enter Studio" }).click();
   await studio.waitForURL("**/studio");
@@ -61,36 +63,49 @@ async function main() {
   const publicLink = studio.getByRole("link", { name: /Open \/p\/ocean-explorer/ });
   await publicLink.waitFor();
 
-  const desktop = await chrome.newPage({ viewport: { width: 1440, height: 1000 } });
+  const desktopContext = await chrome.newContext({ viewport: { width: 1440, height: 1000 } });
+  const desktop = await desktopContext.newPage();
   desktop.on("console", (message) => {
     if (isUnexpectedConsoleError(message)) consoleErrors.push(`public-chromium:${message.text()}`);
   });
-  await desktop.goto("http://localhost:3000/p/ocean-explorer");
+  await desktop.goto(`${frontendBaseUrl}/p/ocean-explorer`);
   await desktop.getByRole("heading", { name: "Ocean Explorer" }).waitFor();
   await ask(desktop, "How do ocean currents affect climate?");
   await desktop.getByText(/Ocean currents move heat around Earth/).waitFor({ timeout: 15_000 });
   await desktop.getByText(/ocean-literacy-2024.pdf · page/).first().click();
   await desktop.locator(".public-citations details[open]").waitFor();
+  const desktopA11y = await new AxeBuilder({ page: desktop }).analyze();
+  if (desktopA11y.violations.length) {
+    throw new Error(`desktop accessibility violations: ${desktopA11y.violations.map((item) => `${item.id} (${item.nodes.map((node) => node.target.join(" ")).join(" | ")})`).join(", ")}`);
+  }
   await desktop.screenshot({ path: "/tmp/agentsprout-m7-public-desktop.png", fullPage: true });
 
   const anonymous = await chrome.newContext();
   const denied = await anonymous.request.post(
-    "http://localhost:8000/api/v1/studio/versions/not-public/withdraw",
-    { headers: { Origin: "http://localhost:3000", "Idempotency-Key": "public-cannot-mutate" } },
+    `${backendBaseUrl}/api/v1/studio/versions/not-public/withdraw`,
+    { headers: { Origin: frontendBaseUrl, "Idempotency-Key": "public-cannot-mutate" } },
   );
   if (denied.status() !== 401) throw new Error(`anonymous Studio mutation returned ${denied.status()}`);
   await anonymous.close();
 
   const safari = await webkit.launch({ headless: true });
-  const mobile = await safari.newPage({ viewport: { width: 375, height: 812 } });
+  const mobileContext = await safari.newContext({
+    viewport: { width: 375, height: 812 },
+    reducedMotion: "reduce",
+  });
+  const mobile = await mobileContext.newPage();
   mobile.on("console", (message) => {
     if (isUnexpectedConsoleError(message)) consoleErrors.push(`webkit:${message.text()}`);
   });
-  await mobile.goto("http://localhost:3000/p/ocean-explorer");
+  await mobile.goto(`${frontendBaseUrl}/p/ocean-explorer`);
   await ask(mobile, "How does the ocean influence weather?");
   await mobile.getByText(/Ocean currents move heat around Earth/).waitFor({ timeout: 15_000 });
   const overflow = await mobile.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
   if (overflow) throw new Error("375px public page has horizontal overflow");
+  const mobileA11y = await new AxeBuilder({ page: mobile }).analyze();
+  if (mobileA11y.violations.length) {
+    throw new Error(`mobile accessibility violations: ${mobileA11y.violations.map((item) => `${item.id} (${item.nodes.map((node) => node.target.join(" ")).join(" | ")})`).join(", ")}`);
+  }
   await mobile.screenshot({ path: "/tmp/agentsprout-m7-public-mobile.png", fullPage: true });
   await safari.close();
 
@@ -112,6 +127,8 @@ async function main() {
     published: true,
     chromium_citation: true,
     webkit_375: true,
+    axe_violations: 0,
+    reduced_motion: true,
     direct_mutation_denied: true,
     rate_limit_state: true,
     console_errors: 0,

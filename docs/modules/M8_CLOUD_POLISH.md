@@ -5,6 +5,10 @@
 In progress after M7 acceptance on 2026-08-06. Local preparation may proceed; GitHub and
 cloud account mutations remain blocked until the user explicitly authorizes them.
 
+Local Docker, CI configuration, repository scanning, accessibility, browser regression,
+and real-provider evidence are recorded in
+[`docs/evidence/M8_LOCAL_PREPARATION.md`](../evidence/M8_LOCAL_PREPARATION.md).
+
 ## Vertical outcome
 
 The accepted local product is deployed from a public GitHub repository to Vercel and a single-volume Railway backend, survives redeploy, passes CI/cloud E2E and accessibility checks, and supports a repeatable five-minute interview demonstration.

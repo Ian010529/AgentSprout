@@ -1,0 +1,197 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  APP_ENV: test
+  ALLOWED_ORIGINS: '["http://localhost:3000"]'
+  OPENAI_API_KEY: test-provider-boundary-key
+  STUDIO_ACCESS_CODE: ci-studio-access
+  ADMIN_RESET_TOKEN: ci-admin-reset-token
+  SESSION_SECRET: ci-session-secret-at-least-32-characters
+  PUBLIC_HOURLY_LIMIT: 5
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.13
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - name: Install locked backend
+        run: |
+          python -m pip install --upgrade "pip==25.3"
+          python -m pip install --requirement backend/requirements.lock
+          python -m pip install --editable backend --no-deps
+          python -m pip check
+      - name: Backend quality gates
+        working-directory: backend
+        run: |
+          ruff check app tests alembic
+          ruff format --check app tests alembic
+          pyright
+          pytest
+      - name: Empty database migration
+        working-directory: backend
+        env:
+          DATA_DIR: ${{ runner.temp }}/migration-data
+        run: alembic upgrade head
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install locked frontend
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: Frontend quality gates
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_API_BASE_URL: /api-proxy
+          AGENTSPROUT_BACKEND_ORIGIN: https://api.example.test
+        run: |
+          pnpm lint
+          pnpm typecheck
+          pnpm test
+          pnpm build
+
+  system:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.13
+          cache: pip
+          cache-dependency-path: backend/requirements.lock
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.9.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install application and browsers
+        run: |
+          python -m pip install --upgrade "pip==25.3"
+          python -m pip install --requirement backend/requirements.lock
+          python -m pip install --editable backend --no-deps
+          pnpm --dir frontend install --frozen-lockfile
+          pnpm --dir frontend exec playwright install --with-deps chromium webkit
+          python scripts/download_noaa_source.py
+      - name: Run provider-boundary browser acceptance
+        env:
+          DATA_DIR: ${{ runner.temp }}/browser-data
+          NODE_PATH: ${{ github.workspace }}/frontend/node_modules
+          FRONTEND_BASE_URL: http://localhost:3000
+          BACKEND_BASE_URL: http://localhost:8000
+        run: |
+          mkdir -p "$DATA_DIR"
+          cd backend
+          alembic upgrade head
+          uvicorn tests.e2e_server:application --host 127.0.0.1 --port 8000 >"${RUNNER_TEMP}/backend.log" 2>&1 &
+          backend_pid=$!
+          cd ../frontend
+          pnpm dev >"${RUNNER_TEMP}/frontend.log" 2>&1 &
+          frontend_pid=$!
+          trap 'kill "$backend_pid" "$frontend_pid" 2>/dev/null || true' EXIT
+          cd ..
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:8000/api/v1/ready >/dev/null \
+              && curl --fail --silent http://localhost:3000/access >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              tail -100 "${RUNNER_TEMP}/backend.log" "${RUNNER_TEMP}/frontend.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          node backend/tests/run_m7_browser.cjs
+      - name: Validate public repository boundary
+        run: python scripts/check_repository.py
+      - name: Build backend container
+        run: docker build --tag agentsprout-api:ci .
+      - name: Verify container startup and volume restart
+        run: |
+          docker volume create agentsprout-ci-data >/dev/null
+          docker run --detach --name agentsprout-ci-api \
+            --publish 18000:8000 \
+            --mount source=agentsprout-ci-data,target=/app/data \
+            --env APP_ENV=production \
+            --env DATA_DIR=/app/data \
+            --env 'ALLOWED_ORIGINS=["https://agentsprout.example"]' \
+            --env OPENAI_API_KEY=container-provider-boundary-key \
+            --env STUDIO_ACCESS_CODE=container-studio-access \
+            --env ADMIN_RESET_TOKEN=container-admin-reset-token \
+            --env SESSION_SECRET=container-session-secret-at-least-32-characters \
+            agentsprout-api:ci >/dev/null
+          trap 'docker rm --force agentsprout-ci-api >/dev/null 2>&1 || true; docker volume rm agentsprout-ci-data >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:18000/api/v1/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              docker logs agentsprout-ci-api
+              exit 1
+            fi
+            sleep 1
+          done
+          docker restart agentsprout-ci-api >/dev/null
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:18000/api/v1/ready >/dev/null; then
+              break
+            fi
+            if [ "$attempt" -eq 60 ]; then
+              docker logs agentsprout-ci-api
+              exit 1
+            fi
+            sleep 1
+          done
+          docker exec agentsprout-ci-api python -c "import sqlite3; connection = sqlite3.connect('/app/data/app.db'); assert connection.execute('select version_num from alembic_version').fetchone()[0] == '0007_publish'; assert connection.execute('select count(*) from evaluation_cases').fetchone()[0] == 16"
+          test "$(docker top agentsprout-ci-api -eo user,comm | tail -1 | awk '{print $1}')" != "root"
+
+  ci:
+    if: always()
+    needs: [backend, frontend, system]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every quality gate
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+
+          results = {name: value["result"] for name, value in json.loads(os.environ["NEEDS_JSON"]).items()}
+          print(results)
+          raise SystemExit(0 if all(result == "success" for result in results.values()) else 1)
+          PY

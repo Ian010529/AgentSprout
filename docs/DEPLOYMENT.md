@@ -34,7 +34,11 @@ Cloud deployment occurs only in M8 after local M1–M7 acceptance passes. M0 doc
 
 - Root directory: frontend application directory selected in M1.
 - Production build uses the committed lockfile.
-- Environment variable: `NEXT_PUBLIC_API_BASE_URL` only.
+- Browser API base: set `NEXT_PUBLIC_API_BASE_URL=/api-proxy` in production.
+- Server-only rewrite destination: set `AGENTSPROUT_BACKEND_ORIGIN` to the exact Railway
+  HTTPS origin. Next.js removes the `/api-proxy` prefix and forwards the remaining path to
+  Railway; the server-only value
+  is not included in browser JavaScript.
 - Production URL is added exactly to backend `ALLOWED_ORIGINS`.
 - Preview URLs do not automatically receive credentialed Studio access. Add a specific preview origin only when intentionally testing it.
 
@@ -50,12 +54,13 @@ Cloud deployment occurs only in M8 after local M1–M7 acceptance passes. M0 doc
 
 ### Planned settings
 
-- Deploy from the GitHub backend directory using a committed Dockerfile.
+- Deploy from the GitHub repository root. Railway uses the committed root `Dockerfile`
+  and `railway.json`; only backend and deployment-file changes trigger it.
 - Bind to `0.0.0.0` and Railway's supplied port.
 - One replica only.
 - Persistent volume mounted at `/app/data`.
-- Health endpoint: `/health`.
-- Readiness endpoint checked after migration/startup: `/ready`.
+- Health endpoint: `/api/v1/health`.
+- Readiness endpoint checked after migration/startup: `/api/v1/ready`.
 - Restart policy must not create two active volume-mounted replicas.
 
 ### Required secrets
@@ -90,7 +95,9 @@ Exact verified commands are added in M1 after the scaffold exists; documentation
 
 - Docker is required for reproducible Railway backend deployment, not for local development.
 - Image uses a supported Python runtime pinned in M1.
-- Run as a non-root user when compatible with Railway volume permissions; document any platform-required exception.
+- The container entrypoint starts as root only to create/chown the mounted data directory,
+  then runs Alembic and Uvicorn as the unprivileged `agentsprout` user. Do not set
+  `RAILWAY_RUN_UID`, because overriding the entrypoint UID would prevent volume ownership repair.
 - Copy dependency metadata before source for cache efficiency.
 - Do not bake `.env`, data, NOAA runtime upload, SQLite, or Chroma files into the image.
 - Startup runs safe migrations before serving readiness.
@@ -98,9 +105,12 @@ Exact verified commands are added in M1 after the scaffold exists; documentation
 
 ## 8. Cookie, CORS, and CSRF deployment
 
-Because Vercel and Railway use different sites by default:
+Although Vercel and Railway use different sites, browsers call the same-origin Vercel
+`/api-proxy` path. This avoids depending on third-party cookie acceptance while Vercel
+forwards requests to Railway:
 
-- Studio cookie is Secure and HttpOnly with the required cross-site SameSite setting.
+- Studio cookie remains Secure and HttpOnly; the browser receives it from the same-origin
+  proxy response.
 - Backend enables credentialed CORS only for exact production frontend origin.
 - All Studio mutations require a session-bound CSRF token in `X-CSRF-Token`.
 - Backend validates Origin on credentialed mutation requests.
@@ -118,7 +128,7 @@ Before announcing the live URL:
 4. Record IDs/checksums without content secrets.
 5. Redeploy the backend.
 6. Verify Agent, Ready document, Chroma retrieval, and evaluation remain accessible.
-7. Verify `/ready` after restart.
+7. Verify `/api/v1/ready` after restart.
 8. Remove the temporary test data through the documented reset path.
 
 ## 10. Seed and reset
@@ -135,7 +145,7 @@ Before announcing the live URL:
 2. Create/connect GitHub repository after user confirmation.
 3. Create Railway backend and persistent volume.
 4. Enter Railway secrets and deploy backend.
-5. Verify `/health` and `/ready`.
+5. Verify `/api/v1/health` and `/api/v1/ready`.
 6. Create Vercel frontend and set public API URL.
 7. Add exact Vercel production origin to Railway configuration and redeploy.
 8. Run cloud vertical smoke tests.
@@ -146,14 +156,57 @@ Before announcing the live URL:
 
 ## 12. Cost and availability notes
 
-- Railway free/trial resources and persistent-volume limits may change; recheck official platform terms during M8.
+- Limits and prices were rechecked against official platform pages on 2026-08-06.
+- Railway Free is $0/month but is limited to one replica, 0.5 GB RAM, a 0.5 GB volume,
+  and a 4 GB image. Hobby is $5/month, includes the first $5 of usage, and permits a
+  5 GB volume; resource use above the included amount is billed separately. AgentSprout's
+  dependency image and embedded Chroma workload must be measured after the first cloud build;
+  do not assume Free will fit.
+- Railway permits one volume per service and does not permit replicas with volumes. A
+  volume-mounted deploy has a short downtime window even with a health check. This matches
+  the approved single-replica demo boundary.
+- Vercel Hobby is $0/month but is explicitly for personal, non-commercial use. Because this
+  deployment is a job-seeking portfolio, the conservative compliant choice is Vercel Pro at
+  $20/month with $20 included usage. The user must decide whether their use qualifies for
+  Hobby or authorize Pro; the project will not make that account/billing decision itself.
+- Conservative paid baseline if both recommended plans are authorized: $25/month before
+  Railway usage above its $5 inclusion and before OpenAI API usage.
+- Official references: [Vercel pricing](https://vercel.com/pricing),
+  [Vercel terms](https://vercel.com/legal/terms),
+  [Railway plans](https://docs.railway.com/pricing/plans), and
+  [Railway volume limits](https://docs.railway.com/volumes/reference).
 - Supabase is not part of the approved architecture.
 - Vercel contains no persistent backend state.
 - OpenAI quotas remain enforced even if platform traffic is free.
 - The user must be told before any plan upgrade or billable platform action.
 - Platform cold starts and demo availability are checked on the interview day.
 
-## 13. Rollback and recovery
+## 13. Verified deployment configuration
+
+Local M8 verification uses the same root Docker build as Railway:
+
+```bash
+docker build --tag agentsprout-api:local .
+```
+
+The accepted image automatically runs `alembic upgrade head`, waits for readiness rather
+than provider access, and then serves on Railway's `PORT`. The following dashboard settings
+remain mandatory and cannot be expressed safely in source control:
+
+- attach exactly one volume at `/app/data`
+- keep exactly one replica
+- set `APP_ENV=production` and `DATA_DIR=/app/data`
+- set `ALLOWED_ORIGINS` to a JSON list containing only the exact HTTPS Vercel production origin
+- enter `OPENAI_API_KEY`, `STUDIO_ACCESS_CODE`, `ADMIN_RESET_TOKEN`, and `SESSION_SECRET` privately
+- generate a Railway public HTTPS domain and keep health checking `/api/v1/ready`
+
+For Vercel, import the same GitHub repository, set Root Directory to `frontend`, keep the
+detected Next.js build, set `NEXT_PUBLIC_API_BASE_URL=/api-proxy`, and set the server-only
+`AGENTSPROUT_BACKEND_ORIGIN` to the Railway HTTPS origin.
+Preview deployments do not receive Studio cookie access unless their exact origin is
+intentionally added to Railway.
+
+## 14. Rollback and recovery
 
 - Code rollback must not run destructive down-migrations automatically.
 - Before a schema-changing deployment, create the platform-supported volume backup or an explicit database/file backup appropriate to demo data.
@@ -161,10 +214,10 @@ Before announcing the live URL:
 - If a migration partially fails, stop serving readiness and follow its documented recovery; do not recreate the volume.
 - Fixed sample data can be recreated only by the idempotent seed path, not by a hidden hard-coded UI fallback.
 
-## 14. Interview-day checklist
+## 15. Interview-day checklist
 
 - Live URLs respond.
-- Railway service is awake and `/ready` passes.
+- Railway service is awake and `/api/v1/ready` passes.
 - OpenAI account has sufficient credits/quota.
 - Rate buckets leave Studio and public headroom.
 - Fixed sample and reset behavior are intact.

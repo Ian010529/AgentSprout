@@ -290,6 +290,17 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Reason: Keeps reset protection intentional and auditable while avoiding a slug convention
   or an implicit "first Agent" rule that could preserve the wrong interview data.
 
+### D-048 — M8 same-origin production API proxy
+
+- Date: 2026-08-06
+- Decision: In production, browser requests use Vercel's `/api-proxy` path, which rewrites
+  server-side to the Railway HTTPS origin. Railway remains the API runtime and persistent
+  backend. Local development continues to call FastAPI directly.
+- Reason: A direct Vercel-to-Railway browser call makes the Studio session cookie third-party
+  and therefore unreliable under Safari tracking prevention. The same-origin proxy preserves
+  the approved topology while making Secure HttpOnly sessions first-party to the browser;
+  Railway still enforces exact Origin, CSRF, role, and session checks.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

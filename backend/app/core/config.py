@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
@@ -57,6 +57,22 @@ class Settings(BaseSettings):
             if origin == "*" or not origin.startswith(("http://", "https://")):
                 raise ValueError("ALLOWED_ORIGINS must contain exact HTTP(S) origins")
         return origins
+
+    @model_validator(mode="after")
+    def validate_production_boundary(self) -> Settings:
+        if self.app_env != "production":
+            return self
+        if any(not origin.startswith("https://") for origin in self.allowed_origins):
+            raise ValueError("Production ALLOWED_ORIGINS must contain HTTPS origins only")
+        secret_values = (
+            self.openai_api_key.get_secret_value(),
+            self.studio_access_code.get_secret_value(),
+            self.admin_reset_token.get_secret_value(),
+            self.session_secret.get_secret_value(),
+        )
+        if any(value.startswith("<") and value.endswith(">") for value in secret_values):
+            raise ValueError("Production secrets must not use .env.example placeholders")
+        return self
 
     @property
     def resolved_data_dir(self) -> Path:
