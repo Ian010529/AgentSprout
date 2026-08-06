@@ -323,6 +323,15 @@ All decisions below were confirmed with the user before implementation. Changes 
   unfinished. Small filtered views expose the existing lifecycle without adding another store,
   duplicating workflows, or introducing an administrative product surface.
 
+### D-051 — M8 cloud entitlement and billing boundary
+
+- Date: 2026-08-06
+- Decision: Deploy the interview demo using the account's existing Vercel entitlement and
+  Railway trial entitlement. Do not upgrade a plan or change billing. Keep OpenAI usage metered
+  under the user's existing API account and record real acceptance usage.
+- Reason: This satisfies the confirmed fast portfolio-demo scope without silently creating a
+  recurring platform charge. Commercial or longer-lived use requires a fresh plan/terms review.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

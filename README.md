@@ -6,15 +6,17 @@ AgentSprout Studio is an independent interview concept demo for a child-safe age
 
 This project is inspired by publicly described needs in AI education and a public AI Software Engineer job description. It is not affiliated with, endorsed by, or produced by Bytewise Coding. No Bytewise trademarks, logos, course assets, or private materials are used.
 
-## Current status
+## Live demo
 
-**M8: Cloud Deployment and Product Polish** is in progress. M1–M7 are accepted, and the local vertical demo covers
-Studio access, Agent creation, real ingestion/RAG, child-safety routes, the 16-case Teacher
-evaluation, immutable v1/v2 comparison, approval, publishing, anonymous public chat, and
-reset protection. Production Docker, deployment configuration, repository validation, and
-GitHub workflows are locally verified; live GitHub/Vercel/Railway acceptance still requires
-explicit account and cost authorization. See
-[`docs/CURRENT_MODULE.md`](docs/CURRENT_MODULE.md).
+- [Open the published Ocean Explorer](https://agentsprout.vercel.app/p/ocean-explorer)
+- [Open the protected Studio](https://agentsprout.vercel.app/access) — the access code is shared privately
+- [View the public GitHub repository](https://github.com/Ian010529/AgentSprout)
+- [Inspect the latest accepted CI run](https://github.com/Ian010529/AgentSprout/actions/runs/31080861188)
+
+M1–M8 are accepted. The cloud vertical has passed real OpenAI ingestion/RAG, privacy blocking,
+the 16-case Teacher evaluation, approval/publication, Railway volume restart, desktop Chromium,
+375 px WebKit, axe accessibility, reset, and repeat-run checks. See the
+[cloud acceptance evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md).
 
 ## Five-minute demo outcome
 
@@ -36,7 +38,7 @@ explicit account and cost authorization. See
 - Business data: SQLite
 - Vector data: embedded persistent ChromaDB
 - Models: OpenAI Responses, Embeddings, and Moderation APIs
-- Planned hosting: Vercel frontend; Railway backend with a persistent volume
+- Hosting: Vercel frontend; Railway backend with a persistent volume
 
 Direct backend versions live in [`backend/pyproject.toml`](backend/pyproject.toml), the complete Python environment is frozen in [`backend/requirements.lock`](backend/requirements.lock), and frontend packages are locked in [`frontend/pnpm-lock.yaml`](frontend/pnpm-lock.yaml).
 
@@ -166,9 +168,7 @@ with `python scripts/download_noaa_source.py`; the complete verification record 
 
 Source: <https://repository.library.noaa.gov/view/noaa/67228>
 
-## Planned live demo
-
-The final README will include the GitHub repository URL and Vercel live URL after M8 deployment. Studio access will require a separately shared access code. The published Ocean Explorer page will be public but rate limited.
+## Demo data and limitations
 
 For the local interview path, publish with slug `ocean-explorer`, then open
 <http://localhost:3000/p/ocean-explorer>. After confirming that publication, protect this
@@ -183,3 +183,10 @@ curl -X POST \
 Public prompts and validated answers are held only in backend process memory for ten
 minutes. SQLite retains content-free run usage/safety metadata, and public requests are
 independently rate limited from Studio chat.
+
+This is a supervised concept MVP, not a production child service. It intentionally uses one
+Railway replica, SQLite, and embedded Chroma on one volume. It does not include child accounts,
+parental consent, school identity, durable distributed jobs, incident operations, or legal and
+safeguarding approval. Public metadata is cached for up to 60 seconds, so a withdrawn/reset
+temporary slug can remain visible briefly while new chat attempts are already rejected by the
+backend.

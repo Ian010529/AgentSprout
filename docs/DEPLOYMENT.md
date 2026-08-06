@@ -181,6 +181,20 @@ Before announcing the live URL:
 - The user must be told before any plan upgrade or billable platform action.
 - Platform cold starts and demo availability are checked on the interview day.
 
+### Accepted deployment choice
+
+The 2026-08-06 deployment used the account's existing Vercel entitlement and Railway trial
+entitlement. No paid-plan upgrade, card change, or other billing mutation was made. OpenAI API
+usage remains metered separately. Before commercial use or use beyond a job-seeking portfolio,
+recheck Vercel plan eligibility and move to an appropriate paid plan when required.
+
+Live endpoints:
+
+- frontend and same-origin API proxy: <https://agentsprout.vercel.app>
+- backend readiness: <https://agentsprout-api-production.up.railway.app/api/v1/ready>
+- public sample: <https://agentsprout.vercel.app/p/ocean-explorer>
+- repository: <https://github.com/Ian010529/AgentSprout>
+
 ## 13. Verified deployment configuration
 
 Local M8 verification uses the same root Docker build as Railway:

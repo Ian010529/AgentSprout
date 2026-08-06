@@ -2,12 +2,14 @@
 
 ## Status
 
-In progress after M7 acceptance on 2026-08-06. Local preparation may proceed; GitHub and
-cloud account mutations remain blocked until the user explicitly authorizes them.
+Accepted on 2026-08-06 after the user authorized GitHub and cloud deployment.
 
 Local Docker, CI configuration, repository scanning, accessibility, browser regression,
 and real-provider evidence are recorded in
 [`docs/evidence/M8_LOCAL_PREPARATION.md`](../evidence/M8_LOCAL_PREPARATION.md).
+Cloud deployment, real-provider, persistence, browser, repeat-run, and cost-boundary evidence
+is recorded in
+[`docs/evidence/M8_CLOUD_ACCEPTANCE.md`](../evidence/M8_CLOUD_ACCEPTANCE.md).
 
 ## Vertical outcome
 
@@ -108,13 +110,13 @@ The accepted local product is deployed from a public GitHub repository to Vercel
 
 ## Exit gate
 
-- [ ] GitHub CI is green at deployed commit.
-- [ ] Public repository contains no secrets/runtime data.
-- [ ] Vercel and Railway URLs pass health and E2E.
-- [ ] Persistent data survives backend redeploy.
-- [ ] All four experiences and required states are visually/accessibly accepted.
-- [ ] Full live model smoke passes.
-- [ ] Five-minute runbook is rehearsed and timed.
-- [ ] README contains verified setup, architecture, limitations, and links.
-- [ ] All M1–M7 regressions and final acceptance IDs pass.
-- [ ] Final evidence is recorded and user receives deployment/secret/cost handoff.
+- [x] GitHub CI is green at deployed commit.
+- [x] Public repository contains no secrets/runtime data.
+- [x] Vercel and Railway URLs pass health and E2E.
+- [x] Persistent data survives backend redeploy.
+- [x] All four experiences and required states are visually/accessibly accepted.
+- [x] Full live model smoke passes.
+- [x] Five-minute runbook is rehearsed and timed.
+- [x] README contains verified setup, architecture, limitations, and links.
+- [x] All M1–M7 regressions and final acceptance IDs pass.
+- [x] Final evidence is recorded and user receives deployment/secret/cost handoff.

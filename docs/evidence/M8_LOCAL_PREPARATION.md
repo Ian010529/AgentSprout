@@ -142,3 +142,6 @@ The following evidence cannot be produced locally and remains blocking for M8 ac
 
 No GitHub, Vercel, Railway, plan, billing, or cloud-secret state was created or changed
 during this local preparation.
+
+The remaining cloud gate was subsequently completed. See
+[`M8_CLOUD_ACCEPTANCE.md`](M8_CLOUD_ACCEPTANCE.md).
