@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress on 2026-08-06. This module follows a dependency audit requested by the user.
+Accepted on 2026-08-06. This module followed a dependency audit requested by the user.
 
 ## Problem
 
@@ -69,7 +69,6 @@ tests require no import migration, and browser-visible behavior is unchanged.
 
 - [x] Audit identifies a concrete coupling problem and records excluded hotspots with reasons.
 - [x] Module boundary and acceptance criteria are documented before implementation.
-- [ ] API client modules have single, explicit ownership and an acyclic dependency direction.
-- [ ] Existing public imports and runtime behavior are preserved by tests.
-- [ ] All scoped verification passes and evidence is recorded.
-
+- [x] API client modules have single, explicit ownership and an acyclic dependency direction.
+- [x] Existing public imports and runtime behavior are preserved by tests.
+- [x] All scoped verification passes and evidence is recorded.
