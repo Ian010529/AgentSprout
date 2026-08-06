@@ -2,7 +2,7 @@
 
 ## Status
 
-In progress. The user approved this module on 2026-08-06 after reviewing the current
+Local acceptance passed; cloud verification is in progress. The user approved this module on 2026-08-06 after reviewing the current
 cloud UI and confirming that the product should emphasize use rather than repeatedly
 promoting the Ocean Explorer sample.
 
@@ -109,9 +109,9 @@ priority over extended Agent metadata.
 
 ## Exit gate
 
-- [ ] Documentation and acceptance boundaries are committed before implementation.
-- [ ] Studio first-viewport task assertions pass.
-- [ ] Published desktop and mobile chat-first assertions pass.
-- [ ] Existing behavior and accessibility regressions pass.
-- [ ] Screenshots are reviewed and evidence is recorded.
+- [x] Documentation and acceptance boundaries are committed before implementation.
+- [x] Studio first-viewport task assertions pass.
+- [x] Published desktop and mobile chat-first assertions pass.
+- [x] Existing behavior and accessibility regressions pass.
+- [x] Screenshots are reviewed and evidence is recorded.
 - [ ] Main is pushed, production is deployed, and final CI is green.
