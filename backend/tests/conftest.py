@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import time
 from collections.abc import Iterator
+from contextlib import suppress
 from pathlib import Path
-from threading import Lock
+from threading import Barrier, BrokenBarrierError, Lock
 
 import pytest
 from alembic.config import Config
@@ -130,6 +131,7 @@ class FakeJudgeProvider:
         self.active = 0
         self.max_active = 0
         self.lock = Lock()
+        self.first_pair = Barrier(2)
 
     def judge(
         self,
@@ -143,8 +145,12 @@ class FakeJudgeProvider:
         del expected_behavior, audience_age, displayed_output, evidence
         with self.lock:
             self.calls.append(safe_case_prompt)
+            call_number = len(self.calls)
             self.active += 1
             self.max_active = max(self.max_active, self.active)
+        if call_number <= 2:
+            with suppress(BrokenBarrierError):
+                self.first_pair.wait(timeout=1)
         time.sleep(0.01)
         with self.lock:
             self.active -= 1

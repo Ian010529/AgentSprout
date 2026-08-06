@@ -11,7 +11,7 @@ This project is inspired by publicly described needs in AI education and a publi
 - [Open the published Ocean Explorer](https://agentsprout.vercel.app/p/ocean-explorer)
 - [Open the protected Studio](https://agentsprout.vercel.app/access) — the access code is shared privately
 - [View the public GitHub repository](https://github.com/Ian010529/AgentSprout)
-- [Inspect the latest accepted CI run](https://github.com/Ian010529/AgentSprout/actions/runs/31080861188)
+- [Inspect the accepted application CI run](https://github.com/Ian010529/AgentSprout/actions/runs/31080861188)
 
 M1–M8 are accepted. The cloud vertical has passed real OpenAI ingestion/RAG, privacy blocking,
 the 16-case Teacher evaluation, approval/publication, Railway volume restart, desktop Chromium,
