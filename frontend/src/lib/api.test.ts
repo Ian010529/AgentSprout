@@ -81,7 +81,7 @@ describe("API boundary behavior", () => {
     await studioApi.submitVersion("version-1", "csrf-1", "idempotency-1");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/studio/versions/version-1/submit",
+      expect.stringMatching(/\/api\/v1\/studio\/versions\/version-1\/submit$/),
       expect.objectContaining({
         method: "POST",
         credentials: "include",
@@ -105,7 +105,7 @@ describe("API boundary behavior", () => {
     await publicApi.getRun("run-1", "opaque-token");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8000/api/v1/public/runs/run-1",
+      expect.stringMatching(/\/api\/v1\/public\/runs\/run-1$/),
       expect.objectContaining({
         method: "GET",
         credentials: "omit",

@@ -14,7 +14,8 @@ Commands and results:
 
 - `pnpm lint` — passed
 - `pnpm typecheck` — passed; all existing `@/lib/api` consumers compile unchanged
-- `pnpm test` — 9 files and 34 tests passed
+- `pnpm test` and `NEXT_PUBLIC_API_BASE_URL=/api-proxy pnpm test` — 9 files and 34 tests
+  passed with both the local direct base URL and production same-origin proxy
 - `pnpm build` — production build passed; all eight routes generated
 - `python3 scripts/check_repository.py` — passed
 - `node backend/tests/run_m7_browser.cjs` against the isolated production frontend and
@@ -42,4 +43,3 @@ No backend, route, component, stylesheet, API contract, persistence, model, depl
 user-visible behavior changed.
 
 Accepted on 2026-08-06.
-
