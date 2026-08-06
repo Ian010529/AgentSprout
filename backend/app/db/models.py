@@ -357,3 +357,21 @@ class EvaluationCaseResult(Base):
     safe_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class TeacherReview(Base):
+    __tablename__ = "teacher_reviews"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version_id: Mapped[str] = mapped_column(
+        ForeignKey("agent_versions.id", ondelete="CASCADE"), index=True
+    )
+    evaluation_run_id: Mapped[str] = mapped_column(
+        ForeignKey("evaluation_runs.id", ondelete="RESTRICT")
+    )
+    session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("demo_sessions.id", ondelete="SET NULL"), nullable=True
+    )
+    decision: Mapped[str] = mapped_column(String(24))
+    feedback: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

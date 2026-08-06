@@ -253,6 +253,20 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Reason: Reuses the product runtime, preserves the pre-provider PII guarantee, makes suite
   evidence reproducible, and prevents evaluation inputs from changing immutable Agent state.
 
+### D-045 — M6 unchanged-knowledge snapshot and comparison boundary
+
+- Date: 2026-08-06
+- Decision: Creating v2 from an immutable version creates a new Ready knowledge-document
+  row and copies the accepted Chroma chunk text, embeddings, and allowlisted metadata into
+  v2-specific document/version metadata without calling the embedding provider. The source
+  upload remains shared read-only until v2 replaces it. Comparison is server-derived from two
+  completed immutable evaluation runs and returns version/run summaries, metric and usage
+  deltas, category pass counts, and stable-key case transitions. Runs must share suite,
+  online, Judge, and embedding baselines.
+- Reason: Preserves isolated retrieval and immutable v1 evidence, avoids unnecessary model
+  cost for unchanged source content, and makes every comparison value reproducible from
+  persisted evidence rather than client arithmetic.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

@@ -174,6 +174,14 @@ class KnowledgeView(StrictModel):
     latest_job: IngestionJobView | None
 
 
+class TeacherReviewView(StrictModel):
+    id: str
+    evaluation_run_id: str
+    decision: Literal["REQUEST_CHANGES", "APPROVE"]
+    feedback: str | None
+    created_at: datetime
+
+
 class VersionDetail(AgentFields):
     id: str
     agent_id: str
@@ -182,9 +190,76 @@ class VersionDetail(AgentFields):
     active_document_id: str | None
     knowledge_status: KnowledgeStatus = "NOT_ADDED"
     knowledge: KnowledgeView
+    what_changed: str | None
+    why_changed: str | None
+    source_version_id: str | None
+    submitted_at: datetime | None
+    approved_at: datetime | None
+    reviews: list[TeacherReviewView]
     allowed_actions: list[str]
     created_at: datetime
     updated_at: datetime
+
+
+class ReviewDecisionResponse(StrictModel):
+    version: VersionDetail
+    review: TeacherReviewView
+
+
+class RequestChanges(StrictModel):
+    evaluation_run_id: str = Field(min_length=36, max_length=36)
+    feedback: Annotated[str, Field(min_length=3, max_length=1000)]
+
+    @field_validator("feedback")
+    @classmethod
+    def validate_feedback(cls, value: str) -> str:
+        return clean_text(value)
+
+
+class ApproveVersion(StrictModel):
+    evaluation_run_id: str = Field(min_length=36, max_length=36)
+
+
+class NextVersion(StrictModel):
+    what_changed: Annotated[str, Field(min_length=3, max_length=500)]
+    why_changed: Annotated[str, Field(min_length=3, max_length=500)]
+
+    @field_validator("what_changed", "why_changed")
+    @classmethod
+    def validate_reflection(cls, value: str) -> str:
+        return clean_text(value)
+
+
+class ComparisonSide(StrictModel):
+    version_id: str
+    version_number: int
+    run_id: str
+    release_eligible: bool
+
+
+class ComparisonCategory(StrictModel):
+    category: EvaluationCategory
+    left_passed: int
+    left_total: int
+    right_passed: int
+    right_total: int
+    passed_delta: int
+
+
+class ComparisonCase(StrictModel):
+    case_key: str
+    category: EvaluationCategory
+    left_passed: bool
+    right_passed: bool
+    transition: Literal["IMPROVED", "REGRESSED", "UNCHANGED"]
+
+
+class VersionComparison(StrictModel):
+    left: ComparisonSide
+    right: ComparisonSide
+    deltas: dict[str, int | float]
+    categories: list[ComparisonCategory]
+    cases: list[ComparisonCase]
 
 
 class AgentCreateResponse(StrictModel):

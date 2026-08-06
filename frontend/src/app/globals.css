@@ -1283,3 +1283,27 @@ select:disabled {
     transition-duration: 0.01ms !important;
   }
 }
+
+.version-timeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border: 1px solid var(--line); margin-bottom: 2rem; }
+.version-timeline article { padding: 1rem 1.2rem; display: grid; gap: .2rem; border-right: 1px solid var(--line); text-transform: uppercase; }
+.version-timeline article.is-current { background: #e8f3ed; }
+.version-timeline span, .version-timeline small { color: var(--muted); font-size: .7rem; letter-spacing: .1em; }
+.reflection-banner, .review-reflection, .teacher-feedback { margin: 1.5rem 0; padding: 1.4rem 1.6rem; border-left: 4px solid var(--teal-300); background: #edf6f1; }
+.reflection-banner div, .review-reflection div { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.reflection-banner strong, .review-reflection strong { display: block; margin-bottom: .35rem; }
+.teacher-feedback { border-left-color: var(--coral-500); background: #fff0e9; }
+.iteration-form, .review-decisions, .comparison-panel { margin: 2rem 0; padding: 2rem; border: 1px solid var(--line); background: var(--paper); }
+.iteration-form { display: grid; grid-template-columns: 1.2fr 1fr 1fr auto; align-items: end; gap: 1.2rem; }
+.iteration-form label, .review-decisions label { display: grid; gap: .5rem; }
+.iteration-form textarea, .review-decisions textarea { min-height: 110px; resize: vertical; }
+.review-decisions { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+.review-decisions form, .review-decisions > div { display: grid; align-content: start; gap: 1rem; }
+.review-decisions button:not(.studio-primary), .comparison-panel button { border: 1px solid var(--navy-950); padding: .8rem 1rem; background: transparent; }
+.comparison-panel header { display: flex; justify-content: space-between; align-items: end; gap: 2rem; }
+.comparison-deltas { display: grid; grid-template-columns: repeat(5, 1fr); margin: 1.5rem 0; border: 1px solid var(--line); }
+.comparison-deltas span { padding: 1rem; display: grid; gap: .4rem; border-right: 1px solid var(--line); font-size: .75rem; }
+.comparison-cases { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+.comparison-cases span { padding: .65rem; border: 1px solid var(--line); display: flex; justify-content: space-between; font-size: .72rem; }
+.comparison-cases .improved { background: #dff5ec; }
+.comparison-cases .regressed { background: #fff0e9; }
+@media (max-width: 1000px) { .iteration-form { grid-template-columns: 1fr 1fr; } .comparison-deltas { grid-template-columns: 1fr 1fr; } }

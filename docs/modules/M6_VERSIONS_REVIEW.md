@@ -2,7 +2,8 @@
 
 ## Status
 
-Pending M5 acceptance.
+Accepted on 2026-08-06. Reproducible evidence is recorded in
+[`docs/evidence/M6_ACCEPTANCE.md`](../evidence/M6_ACCEPTANCE.md).
 
 ## Vertical outcome
 
@@ -94,9 +95,9 @@ The Teacher requests changes with feedback, the Student creates an immutable-com
 
 ## Exit gate
 
-- [ ] Immutability and new-version behavior pass through UI and direct API.
-- [ ] Reflection and Teacher feedback are required where contracted.
-- [ ] Same-baseline comparison is correct and rejects invalid pairs.
-- [ ] Approval is server-gated by eligible evaluation.
-- [ ] M1–M5 regressions pass.
-- [ ] Evidence is recorded before moving to M7.
+- [x] Immutability and new-version behavior pass through UI and direct API.
+- [x] Reflection and Teacher feedback are required where contracted.
+- [x] Same-baseline comparison is correct and rejects invalid pairs.
+- [x] Approval is server-gated by eligible evaluation.
+- [x] M1–M5 regressions pass.
+- [x] Evidence is recorded before moving to M7.

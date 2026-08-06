@@ -176,7 +176,7 @@ For public runs, transient answer content may exist only in process memory and t
 
 ### `teacher_reviews`
 
-- `id`, `version_id`, `evaluation_run_id`, `decision`, `feedback`, `created_at`.
+- `id`, `version_id`, `evaluation_run_id`, nullable acting `session_id`, `decision`, `feedback`, `created_at`.
 - Decisions: `REQUEST_CHANGES`, `APPROVE`, `PUBLISH`, `WITHDRAW`.
 - Feedback is required for Request changes.
 - Approval references one completed, release-eligible evaluation run.

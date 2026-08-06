@@ -48,7 +48,7 @@ def test_sqlite_pragmas_and_migration(settings: Settings) -> None:
 
     assert foreign_keys == 1
     assert str(journal_mode).lower() == "wal"
-    assert current_revision(engine) == head_revision() == "0005_evaluation"
+    assert current_revision(engine) == head_revision() == "0006_versions_review"
 
 
 def test_chroma_persists_across_clients(tmp_path: Path) -> None:

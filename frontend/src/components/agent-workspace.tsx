@@ -159,8 +159,9 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
         <div className="workspace-breadcrumb"><Link href="/studio">Workshop</Link><span>/</span><strong>{state.version.project_name}</strong></div>
         <section className="workspace-heading">
           <div><p className="eyebrow">Knowledge Explorer · Version {state.version.version_number}</p><h1>{state.version.project_name}</h1><p>Define the learner need first. Each later stage unlocks only when its real requirement is met.</p></div>
-          <span className="draft-stamp">Draft</span>
+          <span className="draft-stamp">Draft v{state.version.version_number}</span>
         </section>
+        {state.version.version_number > 1 ? <section className="reflection-banner"><p className="eyebrow">Iteration reflection</p><div><p><strong>What changed</strong>{state.version.what_changed}</p><p><strong>Why changed</strong>{state.version.why_changed}</p></div></section> : null}
         <ol className="workspace-steps" aria-label="Agent build stages">
           <li className="is-complete"><span>01</span><strong>Define</strong><small>Drafted</small></li>
           <li className={knowledgeReady ? "is-complete" : "is-active"}><span>02</span><strong>Knowledge</strong><small>{knowledgeReady ? "Ready" : knowledgeProcessing ? "Processing" : "In progress"}</small></li>
@@ -208,8 +209,8 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
           {!knowledgeReady ? <LockedStage number="03" title="Test behavior" copy="Add a Ready source before asking grounded questions or trying safety boundaries." /> : null}
           {knowledgeReady ? (
             <article className="submit-stage" aria-labelledby="submit-title">
-              <div><p className="eyebrow">04 · Submit</p><h2 id="submit-title">Lock v1 for Teacher review.</h2><p>Submission freezes this configuration and knowledge source. The Teacher can then run the fixed 16-case suite.</p></div>
-              {state.role === "STUDENT" ? <button className="studio-primary" type="button" disabled={pending} onClick={() => void submitForReview()}>{pending ? "Submitting once…" : "Submit v1 for review"}</button> : <p className="read-only-note">Switch to Student to submit this Draft.</p>}
+              <div><p className="eyebrow">04 · Submit</p><h2 id="submit-title">Lock v{state.version.version_number} for Teacher review.</h2><p>Submission freezes this configuration and knowledge source. The Teacher can then run the fixed 16-case suite.</p></div>
+              {state.role === "STUDENT" ? <button className="studio-primary" type="button" disabled={pending} onClick={() => void submitForReview()}>{pending ? "Submitting once…" : `Submit v${state.version.version_number} for review`}</button> : <p className="read-only-note">Switch to Student to submit this Draft.</p>}
               {notice ? <p className="studio-alert" role="status">{notice}</p> : null}
             </article>
           ) : <LockedStage number="04" title="Request review" copy="Submit only after knowledge and safety checks are complete." />}

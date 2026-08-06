@@ -183,9 +183,10 @@ def create_upload(
     day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
     uploads_today = int(
         db.scalar(
-            select(func.count())
+            select(func.count(func.distinct(KnowledgeDocument.id)))
             .select_from(KnowledgeDocument)
-            .where(KnowledgeDocument.created_at >= day_start)
+            .join(IngestionJob, IngestionJob.document_id == KnowledgeDocument.id)
+            .where(IngestionJob.created_at >= day_start)
         )
         or 0
     )

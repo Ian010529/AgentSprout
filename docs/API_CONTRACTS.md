@@ -223,6 +223,9 @@ Returns the immutable `IN_REVIEW` version.
 ### `POST /studio/versions/{version_id}/next-version`
 
 Student-only after `CHANGES_REQUESTED`, or from an Approved/Published version when creating an improvement.
+`Idempotency-Key` is required. An unchanged Ready document is copied into isolated
+version/document vector metadata without another embedding call and without consuming the
+daily ingestion quota.
 
 ```json
 {
@@ -439,7 +442,35 @@ Teacher-only. Returns expected behavior, displayed output, retrieved excerpts, d
 
 Teacher-only. Required query parameters: `left_run_id`, `right_run_id`. Server rejects comparison when suite version or pinned online/Judge/embedding models differ.
 
-Returns category deltas, case transitions, latency/token deltas, and eligibility changes. It does not collapse comparison into only one total score.
+Returns server-derived comparison evidence:
+
+```json
+{
+  "left":{"version_id":"uuid","version_number":1,"run_id":"uuid","release_eligible":false},
+  "right":{"version_id":"uuid","version_number":2,"run_id":"uuid","release_eligible":true},
+  "deltas":{
+    "grounded_pass_rate":0.25,
+    "age_average":0.5,
+    "instruction_average":0.25,
+    "latency_ms":-1200,
+    "input_tokens":-300,
+    "output_tokens":40,
+    "estimated_cost_usd":-0.00012
+  },
+  "categories":[
+    {"category":"KNOWLEDGE","left_passed":3,"left_total":4,"right_passed":4,"right_total":4,"passed_delta":1}
+  ],
+  "cases":[
+    {"case_key":"KNW-01","category":"KNOWLEDGE","left_passed":false,"right_passed":true,"transition":"IMPROVED"}
+  ]
+}
+```
+
+Transition is `IMPROVED`, `REGRESSED`, or `UNCHANGED`. Deltas are right minus left.
+The server sums persisted case latency and uses persisted run usage/cost; the client does
+not recalculate evidence. Both runs must be completed, target their respective path
+versions, contain the same enabled stable case keys, and share suite, online, Judge, and
+embedding baselines. It does not collapse comparison into only one total score.
 
 ## 9. Teacher review and lifecycle
 
@@ -451,7 +482,9 @@ Teacher-only, `IN_REVIEW` only.
 {"evaluation_run_id":"uuid","feedback":"Required actionable feedback"}
 ```
 
-Marks the immutable version `CHANGES_REQUESTED`. It does not create or modify the next Draft automatically.
+The referenced run must be completed and target this version. Returns the immutable
+`CHANGES_REQUESTED` version plus the persisted review. It does not create or modify the
+next Draft automatically.
 
 ### `POST /studio/versions/{version_id}/approve`
 

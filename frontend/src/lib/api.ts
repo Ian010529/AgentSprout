@@ -42,7 +42,7 @@ export type AgentCreate = AgentFields & { template: "KNOWLEDGE_EXPLORER" };
 export type VersionSummary = {
   id: string;
   number: number;
-  state: "DRAFT" | "IN_REVIEW";
+  state: "DRAFT" | "IN_REVIEW" | "CHANGES_REQUESTED" | "APPROVED" | "PUBLISHED" | "WITHDRAWN";
   knowledge_status: KnowledgeStatus;
 };
 export type AgentSummary = {
@@ -65,13 +65,26 @@ export type VersionDetail = AgentFields & {
   id: string;
   agent_id: string;
   version_number: number;
-  state: "DRAFT" | "IN_REVIEW";
+  state: VersionSummary["state"];
   active_document_id: string | null;
   knowledge_status: KnowledgeStatus;
   knowledge: KnowledgeView;
+  what_changed: string | null;
+  why_changed: string | null;
+  source_version_id: string | null;
+  submitted_at: string | null;
+  approved_at: string | null;
+  reviews: TeacherReview[];
   allowed_actions: string[];
   created_at: string;
   updated_at: string;
+};
+export type TeacherReview = {
+  id: string;
+  evaluation_run_id: string;
+  decision: "REQUEST_CHANGES" | "APPROVE";
+  feedback: string | null;
+  created_at: string;
 };
 
 export type IngestionJob = {
@@ -206,6 +219,13 @@ export type EvaluationCaseDetail = EvaluationCase & {
   usage: Record<string, number>;
   latency_ms: number;
   trace_run_id: string | null;
+};
+export type VersionComparison = {
+  left: { version_id: string; version_number: number; run_id: string; release_eligible: boolean };
+  right: { version_id: string; version_number: number; run_id: string; release_eligible: boolean };
+  deltas: Record<"grounded_pass_rate" | "age_average" | "instruction_average" | "latency_ms" | "input_tokens" | "output_tokens" | "estimated_cost_usd", number>;
+  categories: Array<{ category: EvaluationCategory; left_passed: number; left_total: number; right_passed: number; right_total: number; passed_delta: number }>;
+  cases: Array<{ case_key: string; category: EvaluationCategory; left_passed: boolean; right_passed: boolean; transition: "IMPROVED" | "REGRESSED" | "UNCHANGED" }>;
 };
 
 type ErrorEnvelope = {
@@ -450,4 +470,26 @@ export const studioApi = {
     ),
   getEvaluationCase: (resultId: string, signal?: AbortSignal) =>
     requestJson<EvaluationCaseDetail>(`/api/v1/studio/evaluation-cases/${resultId}`, { signal }),
+  requestChanges: (versionId: string, evaluationRunId: string, feedback: string, csrfToken: string) =>
+    requestJson<{ version: VersionDetail; review: TeacherReview }>(
+      `/api/v1/studio/versions/${versionId}/request-changes`,
+      { method: "POST", body: { evaluation_run_id: evaluationRunId, feedback }, csrfToken },
+    ),
+  createNextVersion: (versionId: string, whatChanged: string, whyChanged: string, csrfToken: string, idempotencyKey: string) =>
+    requestJson<VersionDetail>(`/api/v1/studio/versions/${versionId}/next-version`, {
+      method: "POST",
+      body: { what_changed: whatChanged, why_changed: whyChanged },
+      csrfToken,
+      idempotencyKey,
+    }),
+  approveVersion: (versionId: string, evaluationRunId: string, csrfToken: string) =>
+    requestJson<{ version: VersionDetail; review: TeacherReview }>(
+      `/api/v1/studio/versions/${versionId}/approve`,
+      { method: "POST", body: { evaluation_run_id: evaluationRunId }, csrfToken },
+    ),
+  compareVersions: (leftVersionId: string, rightVersionId: string, leftRunId: string, rightRunId: string, signal?: AbortSignal) =>
+    requestJson<VersionComparison>(
+      `/api/v1/studio/versions/${leftVersionId}/compare/${rightVersionId}?left_run_id=${encodeURIComponent(leftRunId)}&right_run_id=${encodeURIComponent(rightRunId)}`,
+      { signal },
+    ),
 };

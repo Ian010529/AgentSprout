@@ -15,6 +15,7 @@ from app.api.schemas import (
     AgentListResponse,
     AgentSummary,
     AgentVersionPatch,
+    TeacherReviewView,
     VersionDetail,
     VersionSummary,
 )
@@ -29,6 +30,7 @@ from app.db.models import (
     IdempotencyRecord,
     IngestionJob,
     KnowledgeDocument,
+    TeacherReview,
 )
 from app.domain.enums import (
     AudienceAge,
@@ -50,7 +52,13 @@ def _allowed_actions(role: str, state: str) -> list[str]:
     if role == Role.STUDENT.value and state == VersionState.DRAFT.value:
         return ["EDIT_DRAFT", "SUBMIT_VERSION"]
     if role == Role.TEACHER.value and state == VersionState.IN_REVIEW.value:
-        return ["RUN_EVALUATION"]
+        return ["RUN_EVALUATION", "REQUEST_CHANGES", "APPROVE"]
+    if role == Role.STUDENT.value and state in {
+        VersionState.CHANGES_REQUESTED.value,
+        VersionState.APPROVED.value,
+        VersionState.PUBLISHED.value,
+    }:
+        return ["CREATE_NEXT_VERSION"]
     return []
 
 
@@ -63,6 +71,10 @@ def _next_action(role: str, state: str) -> str:
         return "Run the fixed evaluation suite"
     if state == VersionState.IN_REVIEW.value:
         return "Waiting for teacher evaluation"
+    if role == Role.STUDENT.value and state == VersionState.CHANGES_REQUESTED.value:
+        return "Review feedback and create the next version"
+    if state == VersionState.APPROVED.value:
+        return "Approved for publication"
     return "No action available"
 
 
@@ -78,6 +90,13 @@ def _version_summary(db: Session, version: AgentVersion) -> VersionSummary:
 
 def _version_detail(db: Session, version: AgentVersion, role: str) -> VersionDetail:
     knowledge_status, knowledge = get_knowledge_view(db, version)
+    reviews = list(
+        db.scalars(
+            select(TeacherReview)
+            .where(TeacherReview.version_id == version.id)
+            .order_by(TeacherReview.created_at)
+        )
+    )
     return VersionDetail(
         id=version.id,
         agent_id=version.agent_id,
@@ -95,6 +114,21 @@ def _version_detail(db: Session, version: AgentVersion, role: str) -> VersionDet
         active_document_id=version.active_document_id,
         knowledge_status=knowledge_status,
         knowledge=knowledge,
+        what_changed=version.what_changed,
+        why_changed=version.why_changed,
+        source_version_id=version.source_version_id,
+        submitted_at=as_utc(version.submitted_at) if version.submitted_at else None,
+        approved_at=as_utc(version.approved_at) if version.approved_at else None,
+        reviews=[
+            TeacherReviewView(
+                id=review.id,
+                evaluation_run_id=review.evaluation_run_id,
+                decision=review.decision,  # pyright: ignore[reportArgumentType]
+                feedback=review.feedback,
+                created_at=as_utc(review.created_at),
+            )
+            for review in reviews
+        ],
         allowed_actions=_allowed_actions(role, version.state),
         created_at=as_utc(version.created_at),
         updated_at=as_utc(version.updated_at),

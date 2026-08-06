@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 from app.core.config import get_settings
@@ -19,13 +20,36 @@ class BrowserTestEmbeddingProvider:
     model = "text-embedding-3-small"
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        terms = ("ocean", "climate", "current", "temperature", "coral", "explore")
+        topics = (
+            ("climate", "current", "currents", "heat", "weather"),
+            ("carbon", "methane"),
+            ("hydrothermal", "vent", "vents", "chemosynthesis"),
+            (
+                "exploration",
+                "explore",
+                "explored",
+                "tool",
+                "tools",
+                "satellite",
+                "satellites",
+                "submersible",
+                "scientist",
+                "scientists",
+            ),
+            ("acidification", "acidic"),
+            ("conveyor", "circulation", "density"),
+        )
         vectors: list[list[float]] = []
         for text in texts:
-            counts = [float(text.lower().count(term)) for term in terms]
-            unsupported_query = len(text) < 200 and not any(counts)
+            tokens = re.findall(r"[a-z]+", text.lower())
+            counts = [float(sum(tokens.count(term) for term in topic)) for topic in topics]
+            lowered = text.lower()
+            unsupported_query = any(
+                marker in lowered
+                for marker in ("french revolution", "quantum computers", "moons does mars")
+            )
             vectors.append(
-                ([0.0] * len(terms) + [1.0])
+                ([0.0] * len(topics) + [1.0])
                 if unsupported_query
                 else [count + 0.001 for count in counts] + [0.0]
             )
@@ -62,9 +86,11 @@ class BrowserTestChatProvider:
         lowered = message.lower()
         intent = (
             "INJECTION"
-            if "hidden instructions" in lowered or "ignore your rules" in lowered
+            if "hidden instructions" in lowered
+            or "ignore your rules" in lowered
+            or "ignore safety" in lowered
             else "HOMEWORK"
-            if "final homework" in lowered
+            if "final homework" in lowered or "final report" in lowered
             else "KNOWLEDGE"
         )
         return IntentOutcome(
@@ -94,7 +120,7 @@ class BrowserTestChatProvider:
         )
         return GenerationOutcome(
             answer=answer,
-            cited_chunk_ids=(str(evidence[0]["chunk_id"]),),
+            cited_chunk_ids=tuple(str(item["chunk_id"]) for item in evidence),
             call=self.record("GENERATION", self.online_model),
         )
 
