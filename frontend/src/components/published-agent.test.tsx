@@ -69,7 +69,11 @@ describe("PublishedAgent", () => {
     expect(await screen.findByRole("heading", { name: "Ocean Explorer" })).toBeInTheDocument();
     expect(screen.getByText("✓ Approved")).toBeInTheDocument();
     expect(screen.getByText(/CC0 Public Domain/)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText("Your ocean question"), {
+    const composer = screen.getByLabelText("Your question");
+    const chat = composer.closest(".public-chat");
+    const about = screen.getByRole("complementary", { name: "What it is here to do" });
+    expect(chat?.compareDocumentPosition(about)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    fireEvent.change(composer, {
       target: { value: "How does the ocean affect climate?" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Ask Agent" }));
@@ -86,7 +90,7 @@ describe("PublishedAgent", () => {
     );
     render(<PublishedAgent slug="ocean-explorer" />);
     await screen.findByRole("heading", { name: "Ocean Explorer" });
-    fireEvent.change(screen.getByLabelText("Your ocean question"), {
+    fireEvent.change(screen.getByLabelText("Your question"), {
       target: { value: "What is ocean literacy?" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Ask Agent" }));

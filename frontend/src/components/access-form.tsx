@@ -47,11 +47,9 @@ export function AccessForm() {
 
   return (
     <section className="access-panel" aria-label="Studio access">
-      <div className="access-panel-index" aria-hidden="true">
-        01 / ENTRY
-      </div>
+      <div className="access-panel-index" aria-hidden="true">STUDIO ACCESS</div>
       <div>
-        <p className="eyebrow">Expedition desk</p>
+        <p className="eyebrow">AgentSprout Studio</p>
         <h2>Enter your Studio code</h2>
         <p className="form-help">The code is sent only to the Studio API and is never saved here.</p>
       </div>
@@ -93,7 +91,7 @@ export function AccessForm() {
         </button>
       </form>
       <Link className="panel-back-link" href="/">
-        ← Return to the concept
+        ← About AgentSprout
       </Link>
     </section>
   );

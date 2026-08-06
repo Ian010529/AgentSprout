@@ -174,15 +174,15 @@ export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardV
   const submittedCount = state.agents.filter((agent) => agent.current_version.state === "IN_REVIEW").length;
   const approvedCount = state.agents.filter((agent) => agent.current_version.state === "APPROVED").length;
   const heading = view === "reviews"
-    ? { eyebrow: "Teacher release desk", title: "Review what is ready.", copy: "Evaluate submitted work, inspect approved evidence, and make the next release decision." }
+    ? { eyebrow: "Review queue", title: "Reviews", copy: "Evaluate submitted work and make the next release decision." }
     : view === "published"
-      ? { eyebrow: "Live Agent directory", title: "See what learners can open.", copy: "Open the public experience or return to its review record to manage the release." }
+      ? { eyebrow: "Public releases", title: "Published", copy: "Open a live Agent or manage its release record." }
       : {
-          eyebrow: isStudent ? "Student workshop" : "Teacher review desk",
-          title: isStudent ? "Build one useful thing." : "Review what is ready.",
+          eyebrow: isStudent ? "Student workspace" : "Teacher workspace",
+          title: "Workshop",
           copy: isStudent
-            ? "Start with a learner need, then make every design choice testable."
-            : "Submitted agents will appear first, with evidence and release readiness.",
+            ? "Create an Agent or continue a Draft."
+            : "Inspect current work or open the review queue.",
         };
   return (
     <StudioShell
@@ -199,69 +199,42 @@ export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardV
             <h1>{heading.title}</h1>
             <p>{heading.copy}</p>
           </div>
-          <div className="session-note">
-            <span>Session</span>
-            <strong>Ends {new Date(state.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong>
+          <div className="dashboard-actions">
+            {view === "workshop" && isStudent ? (
+              <button className="studio-primary" type="button" aria-expanded={showCreate} onClick={() => setShowCreate((current) => !current)}>
+                {showCreate ? "Close creation" : "Create agent"}
+              </button>
+            ) : null}
+            <div className="session-note">
+              <span>Session</span>
+              <strong>Ends {new Date(state.expiresAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</strong>
+            </div>
           </div>
         </section>
 
         {formError ? <p className="studio-alert" role="alert">{formError}</p> : null}
 
-        {view === "workshop" && isStudent ? (
-          <section className="template-section" aria-labelledby="template-title">
-            <div className="section-label">
-              <span>01</span>
-              <div><p className="eyebrow">Choose a starting point</p><h2 id="template-title">Agent templates</h2></div>
-            </div>
-            <article className="template-card">
-              <div className="template-emblem" aria-hidden="true"><span>OE</span></div>
-              <div>
-                <p className="card-kicker">Available now</p>
-                <h3>Knowledge Explorer</h3>
-                <p>Build an age-aware agent that answers from one trusted source and shows its evidence.</p>
-                <ul><li>Grounded answers</li><li>Safety boundaries</li><li>Teacher evaluation</li></ul>
-              </div>
-              <button className="studio-primary" type="button" onClick={() => setShowCreate(true)}>
-                Create agent
-              </button>
-            </article>
-          </section>
-        ) : view === "workshop" ? (
-          <section className="review-shell" aria-labelledby="review-title">
-            <p className="eyebrow">Review priority</p>
-            <h2 id="review-title">{submittedCount ? `${submittedCount} Agent${submittedCount === 1 ? " is" : "s are"} ready.` : "Nothing is waiting for review."}</h2>
-            <p>{submittedCount ? "Open a submitted Agent to run or inspect its fixed evaluation suite." : "Drafts remain visible below, but only submitted versions can be evaluated."}</p>
-          </section>
-        ) : view === "reviews" ? (
-          <DirectoryOverview
-            eyebrow="Review queue"
-            title={reviewAgents.length ? `${reviewAgents.length} Agent${reviewAgents.length === 1 ? " is" : "s are"} in the release flow.` : "The release desk is clear."}
-            copy="Submitted versions need evaluation. Approved versions are ready for a deliberate publish decision."
-            metrics={[{ label: "Awaiting evaluation", value: submittedCount }, { label: "Approved", value: approvedCount }]}
-          />
-        ) : (
-          <DirectoryOverview
-            eyebrow="Public directory"
-            title={publishedAgents.length ? `${publishedAgents.length} Agent${publishedAgents.length === 1 ? " is" : "s are"} live.` : "No Agent is public right now."}
-            copy="Only the currently published version appears here; private Drafts and review evidence remain inside Studio."
-            metrics={[{ label: "Live agents", value: publishedAgents.length }, { label: "Public access", value: "Open" }]}
-          />
-        )}
-
         {showCreate && isStudent && view === "workshop" ? (
-          <CreateAgentForm
-            draft={draft}
-            pending={mutationPending}
-            error={formError}
-            onChange={updateDraft}
-            onCancel={() => { setShowCreate(false); setFormError(null); }}
-            onSubmit={createAgent}
-          />
+          <section className="creation-flow" aria-label="Create Agent">
+            <article className="template-card template-card--compact">
+              <div className="template-emblem" aria-hidden="true"><span>KE</span></div>
+              <div><p className="card-kicker">Starting point</p><h3>Knowledge Explorer</h3><p>An age-aware Agent that answers from one trusted source and shows its evidence.</p></div>
+            </article>
+            <CreateAgentForm draft={draft} pending={mutationPending} error={formError} onChange={updateDraft} onCancel={() => { setShowCreate(false); setFormError(null); }} onSubmit={createAgent} />
+          </section>
+        ) : null}
+
+        {view === "workshop" && !isStudent ? (
+          <p className="queue-note" role="status"><strong>{submittedCount}</strong> awaiting evaluation · <strong>{approvedCount}</strong> approved</p>
+        ) : view === "reviews" ? (
+          <p className="queue-note" role="status"><strong>{submittedCount}</strong> awaiting evaluation · <strong>{approvedCount}</strong> approved</p>
+        ) : view === "published" ? (
+          <p className="queue-note" role="status"><strong>{publishedAgents.length}</strong> live Agent{publishedAgents.length === 1 ? "" : "s"}</p>
         ) : null}
 
         <section className="agents-section" aria-labelledby="agents-title">
           <div className="section-label">
-            <span>{view === "workshop" && isStudent ? "02" : "01"}</span>
+            <span>01</span>
             <div>
               <p className="eyebrow">{view === "reviews" ? "Evidence queue" : view === "published" ? "Public releases" : "Persisted work"}</p>
               <h2 id="agents-title">{view === "reviews" ? "Ready for a decision" : view === "published" ? "Published agents" : isStudent ? "Your agents" : "All agents"}</h2>
@@ -271,7 +244,7 @@ export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardV
             <div className="empty-workbench">
               <span aria-hidden="true">○</span>
               <h3>{view === "reviews" ? "Nothing needs a release decision." : view === "published" ? "Nothing has been published yet." : isStudent ? "The workbench is clear." : "No agents have been created yet."}</h3>
-              <p>{view === "reviews" ? "Submitted and approved versions will appear here automatically." : view === "published" ? "Approve and publish an evaluated Agent to make its public link appear here." : isStudent ? "Create Ocean Explorer from the template above to begin." : "Switch to Student mode to create the first Draft."}</p>
+              <p>{view === "reviews" ? "Submitted and approved versions will appear here automatically." : view === "published" ? "Approve and publish an evaluated Agent to make its public link appear here." : isStudent ? "Use Create agent to start from the available Knowledge Explorer template." : "Switch to Student mode to create the first Draft."}</p>
             </div>
           ) : (
             <div className="agent-grid">
@@ -281,15 +254,6 @@ export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardV
         </section>
       </main>
     </StudioShell>
-  );
-}
-
-function DirectoryOverview({ eyebrow, title, copy, metrics }: { eyebrow: string; title: string; copy: string; metrics: Array<{ label: string; value: number | string }> }) {
-  return (
-    <section className="directory-overview" aria-label={eyebrow}>
-      <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2><p>{copy}</p></div>
-      <dl>{metrics.map((metric) => <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>)}</dl>
-    </section>
   );
 }
 
@@ -332,7 +296,7 @@ type CreateAgentFormProps = {
 function CreateAgentForm({ draft, pending, error, onChange, onCancel, onSubmit }: CreateAgentFormProps) {
   return (
     <section className="creation-sheet" aria-labelledby="create-title">
-      <div className="creation-heading"><div><p className="eyebrow">New expedition</p><h2 id="create-title">Define Ocean Explorer</h2></div><button type="button" onClick={onCancel} disabled={pending}>Close</button></div>
+      <div className="creation-heading"><div><p className="eyebrow">New Agent</p><h2 id="create-title">Define the first Draft</h2></div><button type="button" onClick={onCancel} disabled={pending}>Close</button></div>
       <form className="agent-form" onSubmit={onSubmit}>
         <Field label="Project name" value={draft.project_name} minLength={3} maxLength={80} onChange={(value) => onChange("project_name", value)} />
         <Field label="Problem to solve" value={draft.problem_to_solve} minLength={10} maxLength={500} textarea onChange={(value) => onChange("problem_to_solve", value)} />

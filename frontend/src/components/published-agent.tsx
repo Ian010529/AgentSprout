@@ -130,36 +130,18 @@ export function PublishedAgent({ slug }: { slug: string }) {
           <span>AS</span>
           AgentSprout
         </Link>
-        <p>Published learning Agent</p>
+        <p>Approved learning Agent</p>
       </header>
       <main className="public-main">
-        <section className="public-intro" aria-labelledby="agent-title">
-          <div>
-            <p className="eyebrow">Built by {agent.builder_label}</p>
-            <h1 id="agent-title">{agent.project_name}</h1>
-            <p className="public-lede">{agent.problem_to_solve}</p>
-          </div>
+        <header className="public-agent-bar">
+          <div><p className="eyebrow">Built by {agent.builder_label}</p><h1 id="agent-title">{agent.project_name}</h1></div>
           <div className="public-badges" aria-label="Publication status">
             <span>✓ Approved</span>
             <span>Published v{agent.version_number}</span>
           </div>
-          <dl className="public-goals">
-            <div>
-              <dt>Designed for</dt>
-              <dd>{agent.intended_users}</dd>
-            </div>
-            <div>
-              <dt>Learning goal</dt>
-              <dd>{agent.success_goal}</dd>
-            </div>
-            <div>
-              <dt>Audience</dt>
-              <dd>{agent.audience_age === "AGE_7_11" ? "Ages 7–11" : "Ages 12–17"}</dd>
-            </div>
-          </dl>
-        </section>
-
-        <section className="public-chat" aria-labelledby="chat-title">
+        </header>
+        <div className="public-workspace">
+          <section className="public-chat" aria-labelledby="chat-title">
           <header>
             <div>
               <p className="eyebrow">Ask from the source</p>
@@ -209,7 +191,7 @@ export function PublishedAgent({ slug }: { slug: string }) {
             </div>
           ) : null}
           <form className="public-composer" onSubmit={send}>
-            <label htmlFor="public-message">Your ocean question</label>
+            <label htmlFor="public-message">Your question</label>
             <div>
               <textarea
                 id="public-message"
@@ -225,23 +207,13 @@ export function PublishedAgent({ slug }: { slug: string }) {
               </button>
             </div>
           </form>
-        </section>
-
-        <footer className="public-source">
-          <div>
-            <p className="eyebrow">Knowledge source</p>
-            <strong>{agent.knowledge_source.title}</strong>
-            <p>
-              {agent.knowledge_source.author} · {agent.knowledge_source.license}
-            </p>
-          </div>
-          <a href={agent.knowledge_source.source_url} target="_blank" rel="noreferrer">
-            View NOAA source <span aria-hidden="true">↗</span>
-          </a>
-          <p className="public-disclaimer">
-            Supervised concept demo—not approved for unsupervised child use or emergency help.
-          </p>
-        </footer>
+          </section>
+          <aside className="public-about" aria-labelledby="about-agent-title">
+            <div><p className="eyebrow">About this Agent</p><h2 id="about-agent-title">What it is here to do</h2><p className="public-lede">{agent.problem_to_solve}</p></div>
+            <dl className="public-goals"><div><dt>Designed for</dt><dd>{agent.intended_users}</dd></div><div><dt>Learning goal</dt><dd>{agent.success_goal}</dd></div><div><dt>Audience</dt><dd>{agent.audience_age === "AGE_7_11" ? "Ages 7–11" : "Ages 12–17"}</dd></div></dl>
+            <footer className="public-source"><div><p className="eyebrow">Knowledge source</p><strong>{agent.knowledge_source.title}</strong><p>{agent.knowledge_source.author} · {agent.knowledge_source.license}</p></div><a href={agent.knowledge_source.source_url} target="_blank" rel="noreferrer">View source <span aria-hidden="true">↗</span></a><p className="public-disclaimer">Supervised concept demo—not approved for unsupervised child use or emergency help.</p></footer>
+          </aside>
+        </div>
       </main>
     </div>
   );

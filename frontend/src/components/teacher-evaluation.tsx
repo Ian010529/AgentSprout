@@ -255,9 +255,9 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
   return (
     <StudioShell role={state.role} activeSection="reviews" busy={pending} onRoleChange={(role) => void changeRole(role)} onSignOut={() => void signOut()}>
       <main className="evaluation-main">
-        <div className="workspace-breadcrumb"><Link href="/studio">Workshop</Link><span>/</span><strong>Teacher evidence</strong></div>
+        <div className="workspace-breadcrumb"><Link href="/studio/reviews">Reviews</Link><span>/</span><strong>{state.version.project_name}</strong></div>
         <section className="evaluation-hero">
-          <div><p className="eyebrow">Ocean Explorer · immutable v{state.version.version_number}</p><h1>Prove the Agent<br />before release.</h1><p>Sixteen fixed cases replay the real runtime. Scores are computed from persisted evidence—not editable fields.</p></div>
+          <div><p className="eyebrow">Immutable v{state.version.version_number} · Teacher review</p><h1>{state.version.project_name}</h1><p>Run the fixed suite, inspect persisted evidence, and make a release decision.</p></div>
           <div className="evaluation-action"><span className="review-stamp">{state.version.state.replace("_", " ")}</span>{state.role === "TEACHER" ? <button className="studio-primary" disabled={pending || Boolean(active)} onClick={() => void startEvaluation()}>{active ? "Evaluation running…" : "Run 16-case evaluation"}</button> : <p>Switch to Teacher to run or inspect evaluations.</p>}</div>
         </section>
         <section className="version-timeline" aria-label="Version timeline">

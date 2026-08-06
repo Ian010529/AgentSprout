@@ -21,6 +21,7 @@ const STUDIO_NAV: Array<{ id: StudioSection; number: string; label: string; href
 ];
 
 export function StudioShell({ role, activeSection = "workshop", busy, children, onRoleChange, onSignOut }: StudioShellProps) {
+  const activeLabel = STUDIO_NAV.find((item) => item.id === activeSection)?.label ?? "Studio";
   return (
     <div className="studio-frame">
       <aside className="studio-sidebar">
@@ -43,15 +44,12 @@ export function StudioShell({ role, activeSection = "workshop", busy, children, 
             </Link>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <p>Concept build</p>
-          <strong>Responsible agents, made visible.</strong>
-        </div>
+        <p className="sidebar-product-note">Build · test · release</p>
       </aside>
       <div className="studio-column">
         <header className="studio-header">
           <div>
-            <span className="status-pin" aria-hidden="true" /> Studio connected
+            <span className="status-pin" aria-hidden="true" /> {activeLabel}
           </div>
           <div className="role-controls" aria-label="Demo role">
             <span>View as</span>

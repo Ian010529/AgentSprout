@@ -25,7 +25,7 @@ async function waitForEvaluation(page) {
 }
 
 async function ask(page, message) {
-  await page.getByLabel("Your ocean question").fill(message);
+  await page.getByLabel("Your question").fill(message);
   await page.getByRole("button", { name: "Ask Agent" }).click();
 }
 

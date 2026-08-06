@@ -210,10 +210,10 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
   return (
     <StudioShell role={state.role} busy={pending} onRoleChange={(role) => void changeRole(role)} onSignOut={() => void signOut()}>
       <main className="workspace-main">
-        <div className="workspace-breadcrumb"><Link href="/studio">Workshop</Link><span>/</span><strong>{state.version.project_name}</strong></div>
+        <div className="workspace-breadcrumb"><Link href="/studio">Workshop</Link><span>/</span><strong>Agent workspace</strong></div>
         <section className="workspace-heading">
-          <div><p className="eyebrow">Knowledge Explorer · Version {state.version.version_number}</p><h1>{state.version.project_name}</h1><p>Define the learner need first. Each later stage unlocks only when its real requirement is met.</p></div>
-          <span className="draft-stamp">Draft v{state.version.version_number}</span>
+          <div><p className="eyebrow">Agent workspace</p><h1>{state.version.project_name}</h1><p>Move through each stage, test real behavior, then submit an immutable version.</p></div>
+          <dl className="workspace-context"><div><dt>Version</dt><dd>v{state.version.version_number}</dd></div><div><dt>State</dt><dd>{state.version.state.replaceAll("_", " ")}</dd></div><div><dt>Knowledge</dt><dd>{state.version.knowledge_status.replaceAll("_", " ")}</dd></div></dl>
         </section>
         {state.version.version_number > 1 ? <section className="reflection-banner"><p className="eyebrow">Iteration reflection</p><div><p><strong>What changed</strong>{state.version.what_changed}</p><p><strong>Why changed</strong>{state.version.why_changed}</p></div></section> : null}
         <nav className="workspace-stage-nav" aria-label="Agent build stages">

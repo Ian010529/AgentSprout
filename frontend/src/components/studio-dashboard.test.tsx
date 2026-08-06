@@ -77,7 +77,9 @@ describe("StudioDashboard", () => {
     render(<StudioDashboard />);
 
     expect(screen.getByText("Restoring the workshop…")).toBeInTheDocument();
-    expect(await screen.findByText("Build one useful thing.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Workshop" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Create agent" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Your agents" })).toBeInTheDocument();
     expect(screen.getByText("The workbench is clear.")).toBeInTheDocument();
   });
 
@@ -89,8 +91,8 @@ describe("StudioDashboard", () => {
     studioMocks.listAgents.mockResolvedValue({ agents: [] });
     render(<StudioDashboard />);
 
-    expect(await screen.findByText("Review what is ready.")).toBeInTheDocument();
-    expect(screen.getByText("Nothing is waiting for review.")).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Workshop" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("0 awaiting evaluation · 0 approved");
     expect(screen.queryByRole("button", { name: "Create agent" })).not.toBeInTheDocument();
   });
 
@@ -99,7 +101,7 @@ describe("StudioDashboard", () => {
     studioMocks.listAgents.mockResolvedValue({ agents: [] });
     studioMocks.createAgent.mockReturnValue(new Promise(() => undefined));
     render(<StudioDashboard />);
-    await screen.findByText("Build one useful thing.");
+    await screen.findByRole("heading", { name: "Workshop" });
 
     fireEvent.click(screen.getByRole("button", { name: "Create agent" }));
     const submit = screen.getByRole("button", { name: "Create Ocean Explorer" });
