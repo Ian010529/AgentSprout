@@ -2,35 +2,41 @@
 
 # AgentSprout Studio
 
-**Students build. Teachers evaluate. Safe agents get published.**
+**Build, evaluate, and publish knowledge-grounded learning Agents.**
 
-[![Live Demo](https://img.shields.io/badge/demo-live-146b64?style=flat-square)](https://agentsprout.vercel.app/p/ocean-explorer)
+[English](README.md) | [简体中文](README.zh-CN.md)
+
+[![Application](https://img.shields.io/badge/application-live-146b64?style=flat-square)](https://agentsprout.vercel.app)
 [![CI](https://img.shields.io/github/actions/workflow/status/Ian010529/AgentSprout/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Ian010529/AgentSprout/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](backend/pyproject.toml)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js)](frontend/package.json)
 
 [Public Agent](https://agentsprout.vercel.app/p/ocean-explorer) ·
 [Protected Studio](https://agentsprout.vercel.app/access) ·
-[Cloud evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md)
+[Acceptance evidence](docs/evidence/M9_TASK_FIRST_UX_ACCEPTANCE.md)
 
 </div>
 
-AgentSprout is a deployed full-stack concept for building child-safe, knowledge-grounded AI
-agents. A student defines and tests an Agent, a teacher evaluates the immutable version against
-16 fixed cases, and only an approved version can be published.
+AgentSprout is a full-stack prototype for creating supervised, child-facing AI learning Agents.
+A student configures and tests an Agent against a trusted knowledge source. A teacher evaluates an
+immutable version against a fixed suite before approving and publishing it.
 
-> [!NOTE]
-> This is an independent interview project inspired by public AI-education needs. It is not
-> affiliated with or endorsed by Bytewise Coding and uses no private company materials.
+## Capabilities
 
-## What it demonstrates
-
-- **Real RAG:** PDF ingestion, page-aware chunking, OpenAI embeddings, Chroma retrieval, and validated citations.
-- **Safety before generation:** PII is blocked before provider calls or raw persistence; homework, injection, moderation, and knowledge-boundary routes are explicit.
-- **Agent evaluation:** 16 persisted cases combine deterministic checks with a structured Teacher Judge and release thresholds.
-- **Product lifecycle:** Draft → immutable review → requested changes/v2 comparison → approval → public release/withdrawal.
-- **Observable model-development workflow:** pinned models, sanitized traces, latency, token usage, cost estimates, retries, and failure evidence.
-- **Production-shaped delivery:** responsive UI, accessibility checks, Docker, CI, HTTPS deployment, persistent storage, reset, and restart verification.
+- **Grounded retrieval:** PDF ingestion, page-aware chunking, OpenAI embeddings, Chroma retrieval,
+  evidence thresholds, and validated page-level citations.
+- **Pre-provider privacy checks:** common PII is blocked before model calls and before raw input can
+  be persisted.
+- **Explicit safety paths:** homework assistance, prompt injection, moderation, and out-of-source
+  questions follow separate, testable runtime branches.
+- **Versioned review lifecycle:** Draft, immutable submission, requested changes, version comparison,
+  approval, publication, and withdrawal.
+- **Persisted evaluation:** 16 fixed cases combine deterministic checks with a structured model Judge
+  and server-computed release criteria.
+- **Operational evidence:** sanitized traces, model identifiers, latency, token usage, estimated cost,
+  retries, and individual failure records are available to the Teacher view.
+- **Responsive public use:** the published Agent provides a chat-first interface, citations, privacy
+  reminders, rate-limit states, and mobile support from 375 px.
 
 ## Architecture
 
@@ -47,45 +53,33 @@ flowchart LR
     Files --> Volume
 ```
 
-The same-origin proxy keeps Studio cookies first-party while Railway still enforces Origin,
-CSRF, role, and session checks. The demo intentionally uses one backend replica and one volume.
+The same-origin proxy keeps Studio session cookies first-party. The backend enforces Origin, CSRF,
+role, and session checks and stores SQLite, Chroma, and uploaded sources on one persistent volume.
+The current deployment uses a single backend replica.
 
-## Five-minute interview flow
+## Product workflow
 
-1. Create **Ocean Explorer** and upload NOAA's public-domain *Ocean Literacy* PDF.
-2. Ask a normal question and open its page-level citations.
-3. Show privacy blocking, guided homework help, and prompt-injection resistance.
-4. Submit the immutable version and run the 16-case Teacher evaluation.
-5. Inspect a failure, model usage, trace evidence, and the release gate.
-6. Approve, publish, and open the responsive public Agent.
+1. Create an Agent and define its learner need, users, age range, goal, tone, and behavior.
+2. Upload a supported PDF and wait for extraction, chunking, embedding, and indexing.
+3. Test grounded questions and safety boundaries in the private Studio playground.
+4. Submit an immutable version for Teacher review.
+5. Run the fixed evaluation suite and inspect metrics, failed cases, traces, and model usage.
+6. Request a revised version or approve and publish the evaluated version.
+7. Use the published Agent through its responsive public URL, or withdraw it from the Studio.
 
-## Acceptance snapshot
-
-| Check | Production result |
-|---|---:|
-| Real cloud lifecycle | 2 min 44.6 sec |
-| Reset-to-publish rehearsal | 1 min 28.8 sec |
-| Teacher evaluation | 16/16 completed, 15 passed, 0 errors, release eligible |
-| Post-restart RAG | 7.5 sec, 4 validated citations |
-| Browser accessibility | 0 axe violations in desktop Chromium and 375 px WebKit |
-| Persistence | SQLite, Chroma, upload, evaluation, and publication survived restart |
-
-Full measurements, models, usage, and deployment IDs are recorded in the
-[cloud acceptance report](docs/evidence/M8_CLOUD_ACCEPTANCE.md).
-
-## Stack
+## Technology
 
 | Layer | Technology |
 |---|---|
 | Frontend | Next.js 16, React 19, TypeScript, assistant-ui |
 | Backend | Python 3.12, FastAPI, typed LangGraph runtime |
 | Models | `gpt-4o-mini`, `gpt-4.1-mini`, `text-embedding-3-small`, Moderation API |
-| Data | SQLite, embedded persistent ChromaDB, local-volume uploads |
+| Data | SQLite, embedded persistent ChromaDB, volume-backed uploads |
 | Delivery | Docker, GitHub Actions, Vercel, Railway |
 
 ## Quick start
 
-Requirements: Python 3.12, Node 24, pnpm 11.9, and an OpenAI API key.
+Requirements: Python 3.12, Node.js 24, pnpm 11.9, and an OpenAI API key.
 
 ```bash
 git clone https://github.com/Ian010529/AgentSprout.git
@@ -102,7 +96,7 @@ backend/.venv/bin/python scripts/download_noaa_source.py
 cd backend && .venv/bin/alembic upgrade head && cd ..
 ```
 
-Replace every placeholder in `.env`, then start the two processes:
+Replace every placeholder in `.env`, then start the backend and frontend separately:
 
 ```bash
 # Terminal 1
@@ -112,8 +106,8 @@ cd backend && .venv/bin/uvicorn app.main:create_app --factory --reload --port 80
 cd frontend && pnpm dev
 ```
 
-Open <http://localhost:3000>. Runtime deliberately fails clearly when required secrets or the
-configured OpenAI models are unavailable; there is no fake/offline model fallback.
+Open <http://localhost:3000>. The runtime reports missing secrets or unavailable configured models
+as errors; it does not include an offline or canned-answer model fallback.
 
 ## Verification
 
@@ -122,24 +116,26 @@ cd backend && .venv/bin/ruff check app tests alembic && .venv/bin/pyright && .ve
 cd ../frontend && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-CI additionally runs the complete provider-boundary browser lifecycle, WebKit mobile checks,
-axe, empty migrations, Git-history secret/runtime scans, Docker build, and volume restart.
+CI also verifies empty-database migrations, the complete provider-boundary browser lifecycle,
+375 px WebKit behavior, axe accessibility, repository secret/runtime-data boundaries, the Docker
+image, and persistence across a container restart. Recorded results are available in the
+[acceptance evidence](docs/evidence/M9_TASK_FIRST_UX_ACCEPTANCE.md).
 
 ## Documentation
 
+- [Product requirements](docs/PRD.md) and [UX specification](docs/UX_SPEC.md)
 - [Architecture](docs/ARCHITECTURE.md) and [API contracts](docs/API_CONTRACTS.md)
 - [Safety and privacy](docs/SECURITY_AND_PRIVACY.md)
 - [Evaluation suite](docs/EVALUATION_SUITE.md) and [test strategy](docs/TEST_STRATEGY.md)
-- [Deployment plan](docs/DEPLOYMENT.md) and [demo runbook](docs/DEMO_RUNBOOK.md)
-- [Cloud acceptance evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md)
+- [Deployment](docs/DEPLOYMENT.md) and [knowledge-source attribution](docs/KNOWLEDGE_SOURCE.md)
 
 ## Scope and limitations
 
-This is a supervised concept MVP, not a production child service. It does not provide child
-accounts, parental consent, school identity, distributed jobs, managed multi-replica storage,
-incident operations, or legal/safeguarding approval. Public chat content is memory-only and
-rate-limited; Studio content follows the documented retention policy. Public metadata may remain
-cached for up to 60 seconds after withdrawal.
+AgentSprout is a supervised prototype, not an approved production service for unsupervised child
+use. It does not provide child accounts, parental consent, school identity integration, distributed
+task execution, managed multi-replica storage, incident operations, or legal and safeguarding approval.
 
-The demo source is NOAA's unchanged, checksum-verified 2024 *Ocean Literacy* PDF, identified by
-NOAA as CC0 Public Domain. See [source and attribution details](docs/KNOWLEDGE_SOURCE.md).
+Public chat content is held in process memory for a limited period and is rate-limited. Studio data
+follows the documented retention policy. Public metadata may remain cached for up to 60 seconds
+after withdrawal. The included example uses NOAA's unchanged, checksum-verified 2024 *Ocean
+Literacy* PDF, which NOAA identifies as CC0 Public Domain.
