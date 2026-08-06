@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { ApiError, systemApi } from "./api";
+import { ApiError, publicApi, studioApi, systemApi } from "./api";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -65,5 +65,52 @@ describe("systemApi", () => {
       status: "not_ready",
       checks: { chroma: "failed" },
     });
+  });
+});
+
+describe("API boundary behavior", () => {
+  it("preserves Studio credentials, CSRF, and idempotency headers", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "version-1" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await studioApi.submitVersion("version-1", "csrf-1", "idempotency-1");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/api/v1/studio/versions/version-1/submit",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        headers: expect.objectContaining({
+          "X-CSRF-Token": "csrf-1",
+          "Idempotency-Key": "idempotency-1",
+        }),
+      }),
+    );
+  });
+
+  it("keeps public polling credential-free and sends only the opaque run token", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: "run-1" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await publicApi.getRun("run-1", "opaque-token");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/api/v1/public/runs/run-1",
+      expect.objectContaining({
+        method: "GET",
+        credentials: "omit",
+        headers: expect.objectContaining({ "X-Public-Run-Token": "opaque-token" }),
+      }),
+    );
   });
 });
