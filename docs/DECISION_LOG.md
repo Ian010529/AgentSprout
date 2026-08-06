@@ -332,6 +332,18 @@ All decisions below were confirmed with the user before implementation. Changes 
 - Reason: This satisfies the confirmed fast portfolio-demo scope without silently creating a
   recurring platform charge. Commercial or longer-lived use requires a fresh plan/terms review.
 
+### D-052 — M9 task-first product hierarchy
+
+- Date: 2026-08-06
+- Decision: Treat Ocean Explorer as Agent instance data, not as the visual identity of Studio or
+  the generic public runtime. Studio routes use compact task headers and place their list, stage,
+  evaluation, or decision surface in the first desktop viewport. Published Agent routes place the
+  conversation and composer before extended project metadata on desktop and mobile. Preserve the
+  existing routes, components where practical, APIs, states, and brand tokens.
+- Reason: The accepted M8 interface was functionally complete but used landing-page composition
+  inside repeated work surfaces. This obscured the actual product-building and Agent-usage tasks,
+  and made a single sample appear to define the whole platform.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

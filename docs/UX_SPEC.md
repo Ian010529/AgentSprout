@@ -66,6 +66,9 @@ Required elements:
 - concise explanation that this is a protected concept Studio
 - invalid-code, expired-session, rate-limit, network-error, and server-error states
 
+The form is the first visual and reading-order priority. Supporting concept copy is concise and
+must not turn this utility route into a promotional landing page.
+
 Success sets a Secure HttpOnly session cookie and redirects to `/studio`. The access code must never be placed in localStorage, a URL, analytics, or logs.
 
 ### 5.2 Dashboard
@@ -83,6 +86,15 @@ agent-list request:
 The selected sidebar destination uses `aria-current="page"`. Role switching keeps the user
 in the selected view and refreshes its server-authoritative actions.
 
+All three views are task-first:
+
+- a compact page header names the current task and exposes its primary action or status;
+- the relevant Agent list/queue begins in the first 1440 x 1000 viewport;
+- counts may appear as compact metadata, but a separate overview card must not repeat the list or
+  empty-state message;
+- Ocean Explorer appears only as Agent data or an editable creation default, never as the name of
+  the Studio shell or a generic workflow instruction.
+
 Student mode:
 
 - Knowledge Explorer template card
@@ -90,6 +102,10 @@ Student mode:
 - `Create agent` action
 - agent cards showing name, latest version, lifecycle state, knowledge status, and next action
 - empty state that leads directly to the template
+
+The Student `Create agent` action sits in the Workshop header. Opening it reveals the available
+Knowledge Explorer starting point and creation form without pushing the persisted Agent list out
+of the default first viewport.
 
 Teacher mode:
 
@@ -111,6 +127,9 @@ Playground conversation are not discarded when the user changes stages:
 4. **Submit** — version summary, change reflection for v2+, readiness checklist, submit action.
 
 Rules:
+
+- A compact Agent context header shows project name, version, lifecycle state, and knowledge
+  status; the stage navigation and selected panel follow immediately in the first viewport.
 
 - The selected stage is stored in the URL fragment (`#define`, `#knowledge`, `#test`, or
   `#submit`). Refresh and browser Back/Forward restore the selected unlocked stage.
@@ -161,6 +180,10 @@ Required sections:
 
 No score may be edited manually.
 
+The route is a review workbench, not a campaign page. Version state, evaluation/release gate, and
+the next permitted Teacher action are visible in a compact header. When a run exists, case evidence
+is the dominant work surface and is not preceded by an oversized promotional headline.
+
 ### 5.6 Published Agent
 
 Required content:
@@ -178,6 +201,18 @@ Required content:
 - anonymous builder label: `Student Builder`
 
 Do not show the child's name, custom system instructions, Studio traces, evaluation cases, scores, or unpublished versions.
+
+The published route is chat-first:
+
+- Desktop uses the conversation as the primary column and places problem, goal, audience, approval,
+  and source information in a supporting column.
+- At 375 px, Agent name/status is followed by the conversation and composer; extended project and
+  source details appear afterward.
+- The composer is visible in the first 1440 x 1000 viewport, remains reachable with a mobile
+  keyboard, and uses Agent-neutral labels such as `Your question`.
+- Citations remain attached to the answer they support. Privacy guidance remains near the composer.
+- The project name may be Ocean Explorer when that is the published Agent's data; surrounding
+  navigation and controls remain generic to AgentSprout.
 
 ## 6. Component state contract
 

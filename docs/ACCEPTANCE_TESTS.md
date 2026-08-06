@@ -182,6 +182,28 @@ Every `MUST` scenario below must pass. A failed privacy, authorization, state-ma
 - Critical chat/citation flow works at 375 px in Chromium and WebKit.
 - Keyboard, focus, labels, live regions, contrast, and reduced motion meet the documented baseline.
 
+### ACC-UX-001 — Task-first Studio
+
+- At 1440 x 1000, Workshop exposes the Agent list and create action, Reviews exposes its queue,
+  Published exposes its releases, Workspace exposes the stage navigation and selected panel, and
+  Teacher Review exposes its evaluation action or evidence without scrolling.
+- Studio route headers are compact and no overview card repeats the same count/state as the list or
+  empty state.
+- Ocean Explorer is presented only as Agent data or a creation default, not as Studio shell branding
+  or generic workflow language.
+- Existing route, role, API, lifecycle, stage restoration, loading, empty, error, and retry behavior
+  remains unchanged.
+
+### ACC-UX-002 — Chat-first Published Agent
+
+- At 1440 x 1000, Agent identity/status, conversation, and composer are visible without scrolling.
+- At 375 px in Chromium and WebKit, conversation and composer precede extended Agent/source metadata,
+  remain keyboard-reachable, and introduce no horizontal overflow.
+- Composer labels and processing language are Agent-neutral; sample-specific project content remains
+  data-driven.
+- Citations, privacy reminder, source attribution, rate-limit state, safe errors, and accessibility
+  semantics remain present.
+
 ## 9. Reset, deployment, and operations
 
 ### ACC-OPS-001 — Reset
