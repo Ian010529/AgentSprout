@@ -9,17 +9,6 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    ChatRunCreate,
-    EvaluationCaseDetail,
-    EvaluationCaseList,
-    EvaluationCaseSummary,
-    EvaluationCreateResponse,
-    EvaluationProgress,
-    EvaluationRunList,
-    EvaluationRunView,
-)
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import (
     AgentVersion,
@@ -34,6 +23,16 @@ from app.db.models import (
     RunNodeTrace,
 )
 from app.db.readiness import RuntimeResources
+from app.domain.contracts import (
+    ChatRunCreate,
+    EvaluationCaseDetail,
+    EvaluationCaseList,
+    EvaluationCaseSummary,
+    EvaluationCreateResponse,
+    EvaluationProgress,
+    EvaluationRunList,
+    EvaluationRunView,
+)
 from app.domain.enums import (
     ChatResultType,
     ChatStatus,
@@ -42,8 +41,10 @@ from app.domain.enums import (
     Role,
     VersionState,
 )
+from app.domain.errors import ApiError
 from app.providers.contracts import ProviderOutputError, RuntimeProviderError
-from app.services.chat import create_chat_run, process_chat_run, reserve_global_model_call
+from app.services.chat import create_chat_run, process_chat_run
+from app.services.rate_limits import reserve_global_model_call
 
 SUITE_VERSION = "ocean-literacy-v1"
 RUBRIC_VERSION = "teacher-rubric-v1"

@@ -15,15 +15,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    IngestionJobView,
-    JobProgress,
-    KnowledgeDocumentView,
-    KnowledgeStatus,
-    KnowledgeUploadResponse,
-    KnowledgeView,
-)
 from app.core.config import Settings
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import (
@@ -34,7 +25,17 @@ from app.db.models import (
     KnowledgeDocument,
 )
 from app.db.readiness import RuntimeResources
+from app.db.vector import COLLECTION_NAME
+from app.domain.contracts import (
+    IngestionJobView,
+    JobProgress,
+    KnowledgeDocumentView,
+    KnowledgeStatus,
+    KnowledgeUploadResponse,
+    KnowledgeView,
+)
 from app.domain.enums import DocumentStatus, IngestionState, Role, VersionState
+from app.domain.errors import ApiError
 from app.providers.contracts import ProviderTimeoutError
 
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
@@ -42,7 +43,6 @@ MAX_PDF_PAGES = 100
 CHUNK_TARGET = 700
 CHUNK_OVERLAP = 120
 EMBEDDING_BATCH_SIZE = 32
-COLLECTION_NAME = "knowledge_chunks"
 ACTIVE_STATES = {
     IngestionState.UPLOADED.value,
     IngestionState.EXTRACTING.value,

@@ -15,13 +15,12 @@ from app.api.schemas import (
 )
 from app.db.readiness import RuntimeResources
 from app.domain.enums import ChatStatus
-from app.services.chat import (
-    create_chat_run,
+from app.services.chat import create_chat_run, process_chat_run
+from app.services.chat_queries import (
     get_chat_run,
     get_conversation,
     get_latest_conversation,
     get_trace,
-    process_chat_run,
 )
 
 router = APIRouter(prefix="/studio", tags=["studio-playground"])

@@ -12,18 +12,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    ChatResultView,
-    FixedSampleResponse,
-    PublicAgentView,
-    PublicRunCreate,
-    PublicRunCreateResponse,
-    PublicRunView,
-    PublishResponse,
-    PublishVersion,
-    ResetResponse,
-)
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import (
     Agent,
@@ -37,6 +25,18 @@ from app.db.models import (
     TeacherReview,
 )
 from app.db.readiness import RuntimeResources
+from app.db.vector import COLLECTION_NAME
+from app.domain.contracts import (
+    ChatResultView,
+    FixedSampleResponse,
+    PublicAgentView,
+    PublicRunCreate,
+    PublicRunCreateResponse,
+    PublicRunView,
+    PublishResponse,
+    PublishVersion,
+    ResetResponse,
+)
 from app.domain.enums import (
     ChatPhase,
     ChatResultType,
@@ -45,8 +45,10 @@ from app.domain.enums import (
     Role,
     VersionState,
 )
-from app.services.chat import PHASE_COPY, SAFE_PRIVACY_ANSWER, detect_pii, process_public_chat
-from app.services.knowledge import COLLECTION_NAME
+from app.domain.errors import ApiError
+from app.services.chat import process_public_chat
+from app.services.chat_queries import PHASE_COPY
+from app.services.chat_safety import SAFE_PRIVACY_ANSWER, detect_pii
 from app.services.public_store import PublicMemoryRun, TransientStore
 
 PUBLIC_HOUR_SCOPE = "PUBLIC_CHAT_HOUR"

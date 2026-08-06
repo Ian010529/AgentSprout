@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import json
 import logging
-import math
-import re
 import time
 from datetime import timedelta
 from typing import Any, TypedDict, cast
@@ -15,18 +13,6 @@ from langgraph.graph import END, START, StateGraph
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    ChatResultView,
-    ChatRunCreate,
-    ChatRunCreateResponse,
-    ChatRunView,
-    ChatTraceView,
-    CitationView,
-    ConversationMessageView,
-    ConversationView,
-    TraceNodeView,
-)
 from app.core.config import Settings
 from app.core.security import as_utc, keyed_hash, utc_now
 from app.db.models import (
@@ -34,69 +20,49 @@ from app.db.models import (
     ChatRun,
     DemoSession,
     IdempotencyRecord,
-    KnowledgeDocument,
     Message,
     MessageCitation,
-    RateLimitBucket,
     RunNodeTrace,
     SafetyEvent,
     StudioConversation,
 )
 from app.db.readiness import RuntimeResources
+from app.domain.contracts import (
+    ChatResultView,
+    ChatRunCreate,
+    ChatRunCreateResponse,
+    CitationView,
+)
 from app.domain.enums import (
     ChatIntent,
     ChatPhase,
     ChatResultType,
     ChatStatus,
-    DocumentStatus,
-    Role,
 )
+from app.domain.errors import ApiError
 from app.providers.contracts import (
     ProviderCallRecord,
     ProviderOutputError,
     RuntimeProviderError,
 )
+from app.services.chat_access import require_ready_version
+from app.services.chat_safety import (
+    SAFE_INJECTION_ANSWER,
+    SAFE_MODERATION_ANSWER,
+    SAFE_OUT_OF_KNOWLEDGE_ANSWER,
+    SAFE_PRIVACY_ANSWER,
+    detect_pii,
+)
 from app.services.knowledge import RetrievedChunk, retrieve
+from app.services.rate_limits import (
+    STUDIO_CHAT_SCOPE,
+    reserve_global_model_call,
+    reserve_window,
+)
 
 logger = logging.getLogger(__name__)
 
 CHAT_SCOPE = "CHAT_RUN"
-STUDIO_CHAT_SCOPE = "STUDIO_CHAT_HOUR"
-GLOBAL_MODEL_SCOPE = "GLOBAL_MODEL_DAY"
-RETRYABLE_CHAT_ERRORS = {
-    "PROVIDER_TIMEOUT",
-    "PROVIDER_RATE_LIMITED",
-    "PROVIDER_UNAVAILABLE",
-    "SERVICE_RESTARTED",
-}
-EMAIL_RE = re.compile(r"(?i)\b[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9-]+(?:\.[a-z0-9-]+)+\b")
-PHONE_RE = re.compile(r"(?<!\d)(?:\+?\d[\s().-]*){7,15}(?!\d)")
-ADDRESS_RE = re.compile(
-    r"(?i)\b\d{1,6}\s+[a-z0-9][a-z0-9 .'-]{1,60}\s+"
-    r"(?:street|st|road|rd|avenue|ave|lane|ln|drive|dr|court|ct|boulevard|blvd)\b"
-)
-PII_REQUEST_RE = re.compile(
-    r"(?i)\b(?:tell|show|give|share|collect|find|reveal|what(?:'s| is))\b.{0,40}"
-    r"\b(?:email|e-mail|phone|telephone|home address|street address)\b"
-)
-
-SAFE_PRIVACY_ANSWER = (
-    "Keep personal contact details private. I can't use or repeat an email, phone number, "
-    "or home address. Ask a trusted adult if you need help sharing information safely."
-)
-SAFE_MODERATION_ANSWER = (
-    "I can't help with that request. We can switch to a safe ocean-learning question instead. "
-    "If someone may be in immediate danger, tell a trusted adult or contact local emergency help."
-)
-SAFE_INJECTION_ANSWER = (
-    "I can't reveal hidden instructions or ignore the safety and knowledge rules. "
-    "I can still help with a question supported by the Ocean Literacy source."
-)
-SAFE_OUT_OF_KNOWLEDGE_ANSWER = (
-    "I couldn't find enough support for that in the uploaded Ocean Literacy source. "
-    "Try asking about ocean systems, climate, life, exploration, or people's connection "
-    "to the ocean."
-)
 
 
 class GraphState(TypedDict):
@@ -114,86 +80,6 @@ class GraphState(TypedDict):
     result_type: str
     final_answer: str
     safety_category: str
-
-
-def detect_pii(message: str) -> str | None:
-    if EMAIL_RE.search(message):
-        return "PII_EMAIL"
-    if ADDRESS_RE.search(message):
-        return "PII_ADDRESS"
-    if PHONE_RE.search(message):
-        return "PII_PHONE"
-    if PII_REQUEST_RE.search(message):
-        return "PII_REQUEST"
-    return None
-
-
-def _window_bucket(
-    db: Session,
-    *,
-    subject_hash: str,
-    scope: str,
-    duration: timedelta,
-    limit: int,
-    message: str,
-) -> None:
-    now = utc_now()
-    bucket = db.scalar(
-        select(RateLimitBucket).where(
-            RateLimitBucket.subject_hash == subject_hash,
-            RateLimitBucket.scope == scope,
-            RateLimitBucket.window_end > now,
-        )
-    )
-    if bucket is not None and bucket.count >= limit:
-        retry_after = max(1, math.ceil((as_utc(bucket.window_end) - now).total_seconds()))
-        raise ApiError(
-            429,
-            "CHAT_RATE_LIMITED" if scope == STUDIO_CHAT_SCOPE else "GLOBAL_MODEL_LIMITED",
-            message,
-            retryable=True,
-            retry_after_seconds=retry_after,
-        )
-    if bucket is None:
-        db.add(
-            RateLimitBucket(
-                id=str(uuid4()),
-                subject_hash=subject_hash,
-                scope=scope,
-                window_start=now,
-                window_end=now + duration,
-                count=1,
-            )
-        )
-    else:
-        bucket.count += 1
-    db.commit()
-
-
-def reserve_global_model_call(resources: RuntimeResources) -> None:
-    with resources.session_factory() as db:
-        _window_bucket(
-            db,
-            subject_hash=keyed_hash(resources.settings, "global-model", "single-instance"),
-            scope=GLOBAL_MODEL_SCOPE,
-            duration=timedelta(days=1),
-            limit=resources.settings.global_daily_model_limit,
-            message="The demo's daily model-call limit has been reached.",
-        )
-
-
-def _require_ready_version(db: Session, version_id: str) -> AgentVersion:
-    version = db.get(AgentVersion, version_id)
-    if version is None:
-        raise ApiError(404, "VERSION_NOT_FOUND", "The Agent version was not found.")
-    document = (
-        db.get(KnowledgeDocument, version.active_document_id)
-        if version.active_document_id
-        else None
-    )
-    if document is None or document.status != DocumentStatus.READY.value:
-        raise ApiError(409, "KNOWLEDGE_NOT_READY", "Add a Ready knowledge source before testing.")
-    return version
 
 
 def _conversation(
@@ -337,7 +223,7 @@ def create_chat_run(
     payload: ChatRunCreate,
     idempotency_key: str | None,
 ) -> ChatRunCreateResponse:
-    _require_ready_version(db, version_id)
+    require_ready_version(db, version_id)
     if not idempotency_key or not 8 <= len(idempotency_key) <= 200:
         raise ApiError(
             400,
@@ -353,12 +239,13 @@ def create_chat_run(
     replay = _existing_idempotent(db, session, key_hash, request_hash)
     if replay is not None:
         return replay
-    _window_bucket(
+    reserve_window(
         db,
         subject_hash=keyed_hash(resources.settings, "studio-chat", session.id),
         scope=STUDIO_CHAT_SCOPE,
         duration=timedelta(hours=1),
         limit=resources.settings.studio_hourly_limit,
+        error_code="CHAT_RATE_LIMITED",
         message="The Studio message limit has been reached. Try again later.",
     )
 
@@ -994,156 +881,3 @@ def process_public_chat(
         logger.exception("Public chat run failed", extra={"run_id": run_id})
         _fail_run(resources, run_id, "CHAT_RUNTIME_FAILED", False)
     return None
-
-
-PHASE_COPY = {
-    ChatPhase.QUEUED.value: "Queued for safe processing…",
-    ChatPhase.PRIVACY_CHECK.value: "Checking privacy…",
-    ChatPhase.MODERATION.value: "Checking safety…",
-    ChatPhase.INTENT_CLASSIFICATION.value: "Understanding the learning request…",
-    ChatPhase.RETRIEVAL.value: "Searching the knowledge base…",
-    ChatPhase.GENERATION.value: "Preparing an age-appropriate answer…",
-    ChatPhase.OUTPUT_VALIDATION.value: "Verifying safety and citations…",
-    ChatPhase.COMPLETED.value: "Answer ready",
-    ChatPhase.FAILED.value: "Run needs attention",
-}
-
-
-def _citations(db: Session, message_id: str | None) -> list[CitationView]:
-    if message_id is None:
-        return []
-    rows = list(
-        db.scalars(
-            select(MessageCitation)
-            .where(MessageCitation.message_id == message_id)
-            .order_by(MessageCitation.rank)
-        )
-    )
-    return [
-        CitationView(
-            chunk_id=row.chunk_id,
-            filename=row.filename,
-            page_number=row.page_number,
-            excerpt=row.excerpt,
-        )
-        for row in rows
-    ]
-
-
-def get_chat_run(db: Session, run_id: str) -> ChatRunView:
-    run = db.get(ChatRun, run_id)
-    if run is None or run.surface != "STUDIO" or run.conversation_id is None:
-        raise ApiError(404, "CHAT_RUN_NOT_FOUND", "The Playground run was not found.")
-    result = None
-    if run.status == ChatStatus.COMPLETED.value and run.output_message_id:
-        output = db.get(Message, run.output_message_id)
-        if output is not None and run.result_type is not None:
-            result = ChatResultView(
-                type=ChatResultType(run.result_type),
-                answer=output.content,
-                citations=_citations(db, output.id),
-            )
-    return ChatRunView(
-        id=run.id,
-        conversation_id=run.conversation_id,
-        phase=ChatPhase(run.phase),
-        status=ChatStatus(run.status),
-        display_stage=PHASE_COPY[run.phase],
-        result=result,
-        safe_error=run.safe_error_message,
-        retryable=run.error_code in RETRYABLE_CHAT_ERRORS,
-    )
-
-
-def get_conversation(db: Session, conversation_id: str) -> ConversationView:
-    conversation = db.get(StudioConversation, conversation_id)
-    if conversation is None:
-        raise ApiError(404, "CONVERSATION_NOT_FOUND", "The conversation was not found.")
-    messages = list(
-        db.scalars(
-            select(Message)
-            .where(Message.conversation_id == conversation.id)
-            .order_by(Message.created_at, Message.id)
-        )
-    )
-    return ConversationView(
-        id=conversation.id,
-        version_id=conversation.version_id,
-        messages=[
-            ConversationMessageView(
-                id=message.id,
-                run_id=message.run_id,
-                role=cast(Any, message.role),
-                content=message.content,
-                result_type=(
-                    ChatResultType(run.result_type)
-                    if (run := db.get(ChatRun, message.run_id)) is not None
-                    and run.result_type is not None
-                    and message.role == "ASSISTANT"
-                    else None
-                ),
-                citations=_citations(db, message.id),
-                created_at=as_utc(message.created_at),
-            )
-            for message in messages
-        ],
-        updated_at=as_utc(conversation.updated_at),
-    )
-
-
-def get_latest_conversation(db: Session, version_id: str) -> ConversationView | None:
-    _require_ready_version(db, version_id)
-    conversation = db.scalar(
-        select(StudioConversation)
-        .where(
-            StudioConversation.version_id == version_id,
-            StudioConversation.expires_at > utc_now(),
-        )
-        .order_by(StudioConversation.updated_at.desc())
-    )
-    return get_conversation(db, conversation.id) if conversation is not None else None
-
-
-def get_trace(db: Session, session: DemoSession, run_id: str) -> ChatTraceView:
-    if session.role != Role.TEACHER.value:
-        raise ApiError(403, "TEACHER_ROLE_REQUIRED", "Switch to Teacher mode to inspect traces.")
-    run = db.get(ChatRun, run_id)
-    if run is None or run.surface != "STUDIO":
-        raise ApiError(404, "CHAT_RUN_NOT_FOUND", "The Playground run was not found.")
-    traces = list(
-        db.scalars(
-            select(RunNodeTrace)
-            .where(RunNodeTrace.run_id == run.id)
-            .order_by(RunNodeTrace.sequence)
-        )
-    )
-    return ChatTraceView(
-        run_id=run.id,
-        result_type=ChatResultType(run.result_type) if run.result_type else None,
-        nodes=[
-            TraceNodeView(
-                node_name=trace.node_name,
-                sequence=trace.sequence,
-                status=trace.status,
-                duration_ms=trace.duration_ms,
-                safe_summary=cast(dict[str, object], json.loads(trace.safe_summary_json)),
-            )
-            for trace in traces
-        ],
-        models={
-            "online": run.online_model,
-            "moderation": run.moderation_model,
-            "embedding": run.embedding_model,
-        },
-        usage={
-            "input_tokens": run.input_tokens,
-            "output_tokens": run.output_tokens,
-            "reasoning_tokens": run.reasoning_tokens,
-            "estimated_cost_usd": float(run.estimated_cost_usd),
-            "retrieval_ms": run.retrieval_ms,
-            "provider_ms": run.provider_ms,
-            "total_ms": run.total_ms,
-            "retry_count": run.retry_count,
-        },
-        error_code=run.error_code,
-    )

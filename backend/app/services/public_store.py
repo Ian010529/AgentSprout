@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from threading import Lock
 
-from app.api.errors import ApiError
-from app.api.schemas import ChatResultView, PublicRunCreateResponse, ResetResponse
 from app.core.security import as_utc, utc_now
+from app.domain.contracts import ChatResultView, PublicRunCreateResponse, ResetResponse
+from app.domain.errors import ApiError
 
 
 @dataclass

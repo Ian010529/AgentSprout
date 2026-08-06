@@ -8,11 +8,11 @@ from uuid import uuid4
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
 from app.core.config import Settings
 from app.core.security import access_code_matches, as_utc, keyed_hash, new_token, utc_now
 from app.db.models import AuditEvent, DemoSession, RateLimitBucket
 from app.domain.enums import Role
+from app.domain.errors import ApiError
 
 SESSION_COOKIE = "agentsprout_session"
 ACCESS_SCOPE = "STUDIO_ACCESS_FAILURE"

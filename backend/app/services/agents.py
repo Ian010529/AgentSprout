@@ -7,18 +7,6 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    AgentAggregate,
-    AgentCreate,
-    AgentCreateResponse,
-    AgentListResponse,
-    AgentSummary,
-    AgentVersionPatch,
-    TeacherReviewView,
-    VersionDetail,
-    VersionSummary,
-)
 from app.core.config import Settings
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import (
@@ -32,6 +20,17 @@ from app.db.models import (
     KnowledgeDocument,
     TeacherReview,
 )
+from app.domain.contracts import (
+    AgentAggregate,
+    AgentCreate,
+    AgentCreateResponse,
+    AgentListResponse,
+    AgentSummary,
+    AgentVersionPatch,
+    TeacherReviewView,
+    VersionDetail,
+    VersionSummary,
+)
 from app.domain.enums import (
     AudienceAge,
     ChatStatus,
@@ -42,6 +41,7 @@ from app.domain.enums import (
     Tone,
     VersionState,
 )
+from app.domain.errors import ApiError
 from app.services.knowledge import get_knowledge_view
 
 CREATE_SCOPE = "CREATE_AGENT"

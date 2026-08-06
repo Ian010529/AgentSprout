@@ -11,19 +11,6 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.api.errors import ApiError
-from app.api.schemas import (
-    ApproveVersion,
-    ComparisonCase,
-    ComparisonCategory,
-    ComparisonSide,
-    NextVersion,
-    RequestChanges,
-    ReviewDecisionResponse,
-    TeacherReviewView,
-    VersionComparison,
-    VersionDetail,
-)
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
 from app.db.models import (
     Agent,
@@ -38,9 +25,22 @@ from app.db.models import (
     TeacherReview,
 )
 from app.db.readiness import RuntimeResources
+from app.db.vector import COLLECTION_NAME
+from app.domain.contracts import (
+    ApproveVersion,
+    ComparisonCase,
+    ComparisonCategory,
+    ComparisonSide,
+    NextVersion,
+    RequestChanges,
+    ReviewDecisionResponse,
+    TeacherReviewView,
+    VersionComparison,
+    VersionDetail,
+)
 from app.domain.enums import DocumentStatus, EvaluationCategory, EvaluationState, Role, VersionState
+from app.domain.errors import ApiError
 from app.services.agents import get_version
-from app.services.knowledge import COLLECTION_NAME
 
 
 def _require_role(session: DemoSession, role: Role) -> None:
