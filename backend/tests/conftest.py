@@ -53,6 +53,7 @@ class FakeChatProvider:
         self.invalid_citation = False
         self.fail_code: str | None = None
         self.malformed_output = False
+        self.answer_override: str | None = None
 
     def _record(self, operation: str, model: str) -> ProviderCallRecord:
         return ProviderCallRecord(
@@ -106,7 +107,7 @@ class FakeChatProvider:
         if self.malformed_output:
             raise ProviderOutputError
         chunk_id = "not-allowed" if self.invalid_citation else str(evidence[0]["chunk_id"])
-        answer = (
+        answer = self.answer_override or (
             "Ocean currents move heat around Earth. Here is a hint: identify where warm "
             "water travels. What pattern do you notice?"
             if homework

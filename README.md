@@ -8,7 +8,11 @@ This project is inspired by publicly described needs in AI education and a publi
 
 ## Current status
 
-**M1: Foundation** is implemented and awaiting module approval. The repository now contains a verified FastAPI/SQLite/Chroma foundation and a Next.js AgentSprout shell. Access, Agent creation, ingestion, chat, evaluation, and publishing remain deliberately unimplemented. See [`docs/CURRENT_MODULE.md`](docs/CURRENT_MODULE.md).
+**M7: Publication and Public Agent** is in acceptance. The local vertical demo now covers
+Studio access, Agent creation, real ingestion/RAG, child-safety routes, the 16-case Teacher
+evaluation, immutable v1/v2 comparison, approval, publishing, anonymous public chat, and
+reset protection. Cloud deployment remains M8 scope. See
+[`docs/CURRENT_MODULE.md`](docs/CURRENT_MODULE.md).
 
 ## Five-minute demo outcome
 
@@ -25,8 +29,8 @@ This project is inspired by publicly described needs in AI education and a publi
 
 ## Stack
 
-- Frontend: Next.js 16, TypeScript, React 19; assistant-ui is deferred until a conversation primitive is required
-- Backend: Python 3.12 and FastAPI; LangGraph is deferred until the chat runtime module
+- Frontend: Next.js 16, TypeScript, React 19, and selected assistant-ui conversation primitives
+- Backend: Python 3.12, FastAPI, and a typed LangGraph runtime
 - Business data: SQLite
 - Vector data: embedded persistent ChromaDB
 - Models: OpenAI Responses, Embeddings, and Moderation APIs
@@ -94,7 +98,7 @@ curl http://localhost:8000/api/v1/health
 curl http://localhost:8000/api/v1/ready
 ```
 
-## M1 quality checks
+## Quality checks
 
 ```bash
 cd backend
@@ -129,10 +133,28 @@ No `.env`, API key, access code, runtime database, vector data, upload, or log b
 
 ## Knowledge source
 
-The planned example knowledge base is NOAA's 2024 *Ocean Literacy: The Essential Principles and Fundamental Concepts of Ocean Sciences for Learners of All Ages*. NOAA identifies the document as CC0 Public Domain. The original file will be downloaded unchanged during M3, and its source URL, license, and SHA-256 checksum will be recorded.
+The example knowledge base is NOAA's accessible 2024 *Ocean Literacy: The Essential
+Principles and Fundamental Concepts of Ocean Sciences for Learners of All Ages*. NOAA
+identifies the document as CC0 Public Domain. Download the unchanged, checksum-locked file
+with `python scripts/download_noaa_source.py`; the complete verification record is in
+[`docs/KNOWLEDGE_SOURCE.md`](docs/KNOWLEDGE_SOURCE.md).
 
 Source: <https://repository.library.noaa.gov/view/noaa/67228>
 
 ## Planned live demo
 
 The final README will include the GitHub repository URL and Vercel live URL after M8 deployment. Studio access will require a separately shared access code. The published Ocean Explorer page will be public but rate limited.
+
+For the local interview path, publish with slug `ocean-explorer`, then open
+<http://localhost:3000/p/ocean-explorer>. After confirming that publication, protect this
+single canonical sample from demo resets with the admin-only seed operation:
+
+```bash
+curl -X POST \
+  -H 'X-Admin-Reset-Token: <ADMIN_RESET_TOKEN>' \
+  http://localhost:8000/api/v1/admin/seed-fixed-sample/<AGENT_ID>
+```
+
+Public prompts and validated answers are held only in backend process memory for ten
+minutes. SQLite retains content-free run usage/safety metadata, and public requests are
+independently rate limited from Studio chat.

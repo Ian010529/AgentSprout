@@ -8,11 +8,14 @@ from app.api.dependencies import CurrentSession, DatabaseSession, MutationSessio
 from app.api.schemas import (
     ApproveVersion,
     NextVersion,
+    PublishResponse,
+    PublishVersion,
     RequestChanges,
     ReviewDecisionResponse,
     VersionComparison,
     VersionDetail,
 )
+from app.services.publication import publish_version, withdraw_version
 from app.services.review import (
     approve_version,
     compare_versions,
@@ -58,6 +61,29 @@ def approve(
     session: MutationSession,
 ) -> ReviewDecisionResponse:
     return approve_version(db, resources, session, version_id, payload)
+
+
+@router.post("/versions/{version_id}/publish", response_model=PublishResponse)
+def publish(
+    version_id: str,
+    payload: PublishVersion,
+    db: DatabaseSession,
+    resources: RuntimeResource,
+    session: MutationSession,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> PublishResponse:
+    return publish_version(db, resources, session, version_id, payload, idempotency_key)
+
+
+@router.post("/versions/{version_id}/withdraw", response_model=PublishResponse)
+def withdraw(
+    version_id: str,
+    db: DatabaseSession,
+    resources: RuntimeResource,
+    session: MutationSession,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> PublishResponse:
+    return withdraw_version(db, resources, session, version_id, idempotency_key)
 
 
 @router.get(

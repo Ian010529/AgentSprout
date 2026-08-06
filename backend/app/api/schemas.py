@@ -177,7 +177,7 @@ class KnowledgeView(StrictModel):
 class TeacherReviewView(StrictModel):
     id: str
     evaluation_run_id: str
-    decision: Literal["REQUEST_CHANGES", "APPROVE"]
+    decision: Literal["REQUEST_CHANGES", "APPROVE", "PUBLISH", "WITHDRAW"]
     feedback: str | None
     created_at: datetime
 
@@ -262,6 +262,58 @@ class VersionComparison(StrictModel):
     cases: list[ComparisonCase]
 
 
+class PublishVersion(StrictModel):
+    slug: Annotated[str, Field(min_length=3, max_length=60, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")]
+
+
+class PublishResponse(StrictModel):
+    slug: str
+    public_path: str
+    version_number: int
+
+
+class PublicAgentView(StrictModel):
+    slug: str
+    project_name: str
+    problem_to_solve: str
+    intended_users: str
+    audience_age: AudienceAge
+    success_goal: str
+    welcome_message: str
+    version_number: int
+    status: Literal["PUBLISHED"]
+    builder_label: Literal["Student Builder"] = "Student Builder"
+    knowledge_source: dict[str, str]
+
+
+class PublicRunCreate(StrictModel):
+    message: Annotated[str, Field(min_length=1, max_length=1000)]
+
+    @field_validator("message")
+    @classmethod
+    def validate_public_message(cls, value: str) -> str:
+        return clean_text(value)
+
+
+class PublicRunCreateResponse(StrictModel):
+    run_id: str
+    run_token: str
+    phase: ChatPhase
+    poll_after_ms: int = 500
+
+
+class ResetResponse(StrictModel):
+    reset_audit_id: str
+    deleted_agents: int
+    preserved_fixed_samples: int
+
+
+class FixedSampleResponse(StrictModel):
+    agent_id: str
+    slug: str
+    fixed: Literal[True] = True
+
+
 class AgentCreateResponse(StrictModel):
     agent: AgentAggregate
     version: VersionDetail
@@ -302,6 +354,16 @@ class ChatResultView(StrictModel):
     type: ChatResultType
     answer: str
     citations: list[CitationView]
+
+
+class PublicRunView(StrictModel):
+    id: str
+    phase: ChatPhase
+    status: ChatStatus
+    display_stage: str
+    result: ChatResultView | None
+    safe_error: str | None
+    retryable: bool
 
 
 class ChatRunView(StrictModel):

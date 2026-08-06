@@ -41,6 +41,7 @@ erDiagram
 | `published_version_id` | nullable; only one active public version |
 | `created_at`, `updated_at` | UTC |
 | `deleted_at` | nullable soft-delete marker during cleanup |
+| `is_fixed_sample` | reset-protected sample marker; false for ordinary Studio Agents |
 
 ### `agent_versions`
 

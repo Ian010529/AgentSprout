@@ -26,6 +26,7 @@ type ReadyState = {
   cases: EvaluationCase[];
   versions: VersionDetail[];
   histories: Record<string, EvaluationRun[]>;
+  publishedVersionId: string | null;
 };
 
 const categories: Array<{ value: EvaluationCategory | "ALL"; label: string }> = [
@@ -50,8 +51,13 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
   const [whatChanged, setWhatChanged] = useState("");
   const [whyChanged, setWhyChanged] = useState("");
   const [comparison, setComparison] = useState<VersionComparison | null>(null);
+  const [slug, setSlug] = useState("");
+  const [confirmed, setConfirmed] = useState(false);
+  const [publicPath, setPublicPath] = useState<string | null>(null);
   const startKey = useRef<string | null>(null);
   const nextKey = useRef<string | null>(null);
+  const publishKey = useRef<string | null>(null);
+  const withdrawKey = useRef<string | null>(null);
 
   const load = useCallback(async (signal?: AbortSignal) => {
     try {
@@ -66,7 +72,9 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
       const runs = histories[latest.id] ?? [];
       const selected = runs[0] ?? null;
       const cases = selected ? (await studioApi.getEvaluationCases(selected.id, undefined, signal)).cases : [];
-      setState({ role: session.session.role, csrf: session.csrf_token, version: latest, versions: versionDetails, histories, runs, selected, cases });
+      setState({ role: session.session.role, csrf: session.csrf_token, version: latest, versions: versionDetails, histories, runs, selected, cases, publishedVersionId: agent.published_version_id });
+      setSlug((current) => current || latest.project_name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""));
+      if (agent.published_version_id === latest.id) setPublicPath(`/p/${agent.slug}`);
       setError(null);
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 401) return router.replace("/access?reason=expired");
@@ -201,6 +209,31 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
     finally { setPending(false); }
   }
 
+  async function publish(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!state || pending || !confirmed) return;
+    setPending(true); setError(null); publishKey.current ??= crypto.randomUUID();
+    try {
+      const result = await studioApi.publishVersion(state.version.id, slug, state.csrf, publishKey.current);
+      publishKey.current = null; setConfirmed(false); setPublicPath(result.public_path); await load();
+    } catch (cause) {
+      if (!(cause instanceof ApiError && cause.retryable)) publishKey.current = null;
+      setError(cause instanceof Error ? cause.message : "The version could not publish.");
+    } finally { setPending(false); }
+  }
+
+  async function withdraw() {
+    if (!state || pending || !confirmed) return;
+    setPending(true); setError(null); withdrawKey.current ??= crypto.randomUUID();
+    try {
+      await studioApi.withdrawVersion(state.version.id, state.csrf, withdrawKey.current);
+      withdrawKey.current = null; setConfirmed(false); setPublicPath(null); await load();
+    } catch (cause) {
+      if (!(cause instanceof ApiError && cause.retryable)) withdrawKey.current = null;
+      setError(cause instanceof Error ? cause.message : "The public Agent could not withdraw.");
+    } finally { setPending(false); }
+  }
+
   async function compareLatest() {
     if (!state || state.versions.length < 2 || pending) return;
     const leftVersion = state.versions.at(-2)!;
@@ -247,6 +280,8 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
               <div className="case-table" role="table" aria-label="Evaluation cases">{visible.map((item) => <button key={item.id} role="row" onClick={() => void inspect(item.id)}><span>{item.case_key}</span><span>{item.category.replaceAll("_", " ")}</span><span>{item.actual_result_type ?? item.state}</span><strong className={item.state === "ERROR" ? "is-error" : item.passed ? "is-pass" : "is-fail"}>{item.state === "ERROR" ? "ERROR" : item.passed ? "PASS" : item.state === "COMPLETED" ? "FAIL" : item.state}</strong></button>)}</div>
             </section>
             {state.role === "TEACHER" && run.state === "COMPLETED" && state.version.state === "IN_REVIEW" ? <section className="review-decisions"><form onSubmit={requestChanges}><p className="eyebrow">Needs another iteration</p><h2>Request specific changes.</h2><label>Required feedback<textarea required minLength={3} maxLength={1000} value={feedback} onChange={(event) => setFeedback(event.target.value)} /></label><button disabled={pending}>Request changes</button></form><div><p className="eyebrow">Release decision</p><h2>{run.release_eligible ? "This run can be approved." : "Release gate is blocked."}</h2><p>{run.release_eligible ? "Approval keeps this version immutable and does not publish it." : "Resolve blocking cases or infrastructure errors, submit a new version, and evaluate again."}</p><button className="studio-primary" disabled={pending || !run.release_eligible} onClick={() => void approve()}>Approve v{state.version.version_number}</button></div></section> : null}
+            {state.role === "TEACHER" && state.version.state === "APPROVED" ? <form className="publication-panel" onSubmit={publish}><div><p className="eyebrow">Approved for release</p><h2>Publish a stable public address.</h2><p>The public page exposes only approved metadata and a privacy-minimizing chat. Studio evidence remains private.</p></div><label>Public slug<input required minLength={3} maxLength={60} pattern="[a-z0-9]+(?:-[a-z0-9]+)*" value={slug} onChange={(event) => setSlug(event.target.value)} /></label><label className="publish-confirm"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /> I confirm this Approved version should be public.</label><button className="studio-primary" disabled={pending || !confirmed}>{pending ? "Publishing once…" : `Publish v${state.version.version_number}`}</button></form> : null}
+            {state.role === "TEACHER" && state.publishedVersionId === state.version.id ? <section className="publication-panel is-live"><div><p className="eyebrow">Public now</p><h2>Published Agent is live.</h2><p>Withdrawing removes public availability without deleting evaluation or knowledge evidence.</p>{publicPath ? <Link href={publicPath} target="_blank">Open {publicPath} ↗</Link> : null}</div><label className="publish-confirm"><input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} /> I confirm this public version should be withdrawn.</label><button disabled={pending || !confirmed} onClick={() => void withdraw()}>{pending ? "Withdrawing once…" : "Withdraw public Agent"}</button></section> : null}
             {state.role === "TEACHER" && state.versions.length > 1 ? <section className="comparison-panel"><header><div><p className="eyebrow">Version evidence</p><h2>Compare like with like.</h2></div><button disabled={pending} onClick={() => void compareLatest()}>Compare latest completed runs</button></header>{comparison ? <><div className="comparison-deltas"><span>Grounded <strong>{comparison.deltas.grounded_pass_rate >= 0 ? "+" : ""}{Math.round(comparison.deltas.grounded_pass_rate * 100)} pts</strong></span><span>Age <strong>{comparison.deltas.age_average.toFixed(2)}</strong></span><span>Tokens <strong>{comparison.deltas.input_tokens + comparison.deltas.output_tokens}</strong></span><span>Latency <strong>{comparison.deltas.latency_ms} ms</strong></span><span>Cost <strong>${comparison.deltas.estimated_cost_usd.toFixed(5)}</strong></span></div><div className="comparison-cases">{comparison.cases.map((item) => <span className={item.transition.toLowerCase()} key={item.case_key}>{item.case_key}<strong>{item.transition}</strong></span>)}</div></> : <p>Selecting comparison verifies suite and model baselines on the server.</p>}</section> : null}
           </>
         ) : <section className="evaluation-empty"><p className="eyebrow">No run yet</p><h2>Start with the fixed suite.</h2><p>The first persisted case will appear here as soon as it completes. Refresh restoration is automatic.</p></section>}

@@ -2,7 +2,7 @@
 
 ## Status
 
-Pending M6 acceptance.
+Accepted on 2026-08-06. Evidence: `docs/evidence/M7_ACCEPTANCE.md`.
 
 ## Vertical outcome
 
@@ -98,10 +98,10 @@ The Teacher publishes an Approved version to a stable public slug. Anonymous vis
 
 ## Exit gate
 
-- [ ] Only Approved version can publish.
-- [ ] Public page is isolated, responsive, and functional.
-- [ ] Public full-content non-persistence passes.
-- [ ] Rate limits survive restart and protect Studio quota.
-- [ ] Reset is secure/idempotent and preserves fixed sample.
-- [ ] M1–M6 regressions pass.
-- [ ] Evidence is recorded before moving to M8.
+- [x] Only Approved version can publish.
+- [x] Public page is isolated, responsive, and functional.
+- [x] Public full-content non-persistence passes.
+- [x] Rate limits survive restart and protect Studio quota.
+- [x] Reset is secure/idempotent and preserves fixed sample.
+- [x] M1–M6 regressions pass.
+- [x] Evidence is recorded before moving to M8.

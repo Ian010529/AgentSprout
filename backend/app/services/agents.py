@@ -276,6 +276,7 @@ def create_agent(
         created_at=now,
         updated_at=now,
         deleted_at=None,
+        is_fixed_sample=0,
     )
     version = AgentVersion(
         id=version_id,

@@ -19,6 +19,8 @@ const studioMocks = vi.hoisted(() => ({
   createNextVersion: vi.fn(),
   approveVersion: vi.fn(),
   compareVersions: vi.fn(),
+  publishVersion: vi.fn(),
+  withdrawVersion: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
@@ -107,5 +109,22 @@ describe("TeacherEvaluation", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create Draft v2" }));
     await waitFor(() => expect(studioMocks.createNextVersion).toHaveBeenCalled());
     expect(navigation.push).toHaveBeenCalledWith("/studio/agents/agent-1");
+  });
+
+  it("requires explicit confirmation before publishing an Approved version", async () => {
+    const approved = { ...version, state: "APPROVED", approved_at: "2026-08-06T10:05:00Z" };
+    studioMocks.restore.mockResolvedValue({ session: { role: "TEACHER", expires_at: "later" }, csrf_token: "csrf" });
+    studioMocks.getAgent.mockResolvedValue({ slug: "draft-address", published_version_id: null, versions: [{ id: "version-1" }] });
+    studioMocks.getVersion.mockResolvedValue(approved);
+    studioMocks.listEvaluations.mockResolvedValue({ evaluations: [run] });
+    studioMocks.getEvaluationCases.mockResolvedValue({ cases: [] });
+    studioMocks.publishVersion.mockResolvedValue({ slug: "ocean-explorer", public_path: "/p/ocean-explorer", version_number: 1 });
+    render(<TeacherEvaluation agentId="agent-1" />);
+
+    const publish = await screen.findByRole("button", { name: "Publish v1" });
+    expect(publish).toBeDisabled();
+    fireEvent.click(screen.getByLabelText("I confirm this Approved version should be public."));
+    fireEvent.click(publish);
+    await waitFor(() => expect(studioMocks.publishVersion).toHaveBeenCalled());
   });
 });

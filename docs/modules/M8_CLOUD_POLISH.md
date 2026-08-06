@@ -2,7 +2,8 @@
 
 ## Status
 
-Pending M7 acceptance.
+In progress after M7 acceptance on 2026-08-06. Local preparation may proceed; GitHub and
+cloud account mutations remain blocked until the user explicitly authorizes them.
 
 ## Vertical outcome
 

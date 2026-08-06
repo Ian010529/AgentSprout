@@ -82,7 +82,7 @@ export type VersionDetail = AgentFields & {
 export type TeacherReview = {
   id: string;
   evaluation_run_id: string;
-  decision: "REQUEST_CHANGES" | "APPROVE";
+  decision: "REQUEST_CHANGES" | "APPROVE" | "PUBLISH" | "WITHDRAW";
   feedback: string | null;
   created_at: string;
 };
@@ -228,6 +228,21 @@ export type VersionComparison = {
   cases: Array<{ case_key: string; category: EvaluationCategory; left_passed: boolean; right_passed: boolean; transition: "IMPROVED" | "REGRESSED" | "UNCHANGED" }>;
 };
 
+export type PublicAgent = {
+  slug: string;
+  project_name: string;
+  problem_to_solve: string;
+  intended_users: string;
+  audience_age: AudienceAge;
+  success_goal: string;
+  welcome_message: string;
+  version_number: number;
+  status: "PUBLISHED";
+  builder_label: "Student Builder";
+  knowledge_source: Record<"title" | "author" | "license" | "source_url", string>;
+};
+export type PublicRun = Omit<ChatRun, "conversation_id">;
+
 type ErrorEnvelope = {
   error?: {
     code?: string;
@@ -283,6 +298,8 @@ type RequestOptions = {
   idempotencyKey?: string;
   signal?: AbortSignal;
   acceptedStatuses?: readonly number[];
+  publicRunToken?: string;
+  includeCredentials?: boolean;
 };
 
 async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
@@ -294,12 +311,13 @@ async function requestJson<T>(path: string, options: RequestOptions = {}): Promi
   if (options.body !== undefined) headers["Content-Type"] = "application/json";
   if (options.csrfToken) headers["X-CSRF-Token"] = options.csrfToken;
   if (options.idempotencyKey) headers["Idempotency-Key"] = options.idempotencyKey;
+  if (options.publicRunToken) headers["X-Public-Run-Token"] = options.publicRunToken;
 
   try {
     const response = await fetch(`${apiBaseUrl()}${path}`, {
       method: options.method ?? "GET",
       headers,
-      credentials: "include",
+      credentials: options.includeCredentials === false ? "omit" : "include",
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: combinedSignal,
     });
@@ -492,4 +510,33 @@ export const studioApi = {
       `/api/v1/studio/versions/${leftVersionId}/compare/${rightVersionId}?left_run_id=${encodeURIComponent(leftRunId)}&right_run_id=${encodeURIComponent(rightRunId)}`,
       { signal },
     ),
+  publishVersion: (versionId: string, slug: string, csrfToken: string, idempotencyKey: string) =>
+    requestJson<{ slug: string; public_path: string; version_number: number }>(
+      `/api/v1/studio/versions/${versionId}/publish`,
+      { method: "POST", body: { slug }, csrfToken, idempotencyKey },
+    ),
+  withdrawVersion: (versionId: string, csrfToken: string, idempotencyKey: string) =>
+    requestJson<{ slug: string; public_path: string; version_number: number }>(
+      `/api/v1/studio/versions/${versionId}/withdraw`,
+      { method: "POST", csrfToken, idempotencyKey },
+    ),
+};
+
+export const publicApi = {
+  getAgent: (slug: string, signal?: AbortSignal) =>
+    requestJson<PublicAgent>(`/api/v1/public/agents/${encodeURIComponent(slug)}`, {
+      signal,
+      includeCredentials: false,
+    }),
+  startRun: (slug: string, message: string, idempotencyKey: string) =>
+    requestJson<{ run_id: string; run_token: string; phase: ChatPhase; poll_after_ms: number }>(
+      `/api/v1/public/agents/${encodeURIComponent(slug)}/runs`,
+      { method: "POST", body: { message }, idempotencyKey, includeCredentials: false },
+    ),
+  getRun: (runId: string, runToken: string, signal?: AbortSignal) =>
+    requestJson<PublicRun>(`/api/v1/public/runs/${runId}`, {
+      signal,
+      publicRunToken: runToken,
+      includeCredentials: false,
+    }),
 };

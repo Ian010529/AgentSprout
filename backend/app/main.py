@@ -21,6 +21,7 @@ from app.providers.contracts import ChatProvider, EmbeddingProvider, JudgeProvid
 from app.providers.openai_chat import OpenAIChatProvider
 from app.providers.openai_embeddings import OpenAIEmbeddingProvider
 from app.providers.openai_judge import OpenAIJudgeProvider
+from app.services.public_store import TransientStore
 
 logger = logging.getLogger(__name__)
 
@@ -64,13 +65,22 @@ def create_app(
     application.state.chat_run_ids = set()
     application.state.evaluation_tasks = set()
     application.state.evaluation_run_ids = set()
+    application.state.public_tasks = set()
+    application.state.public_run_ids = set()
+    application.state.transient_store = TransientStore()
     application.add_middleware(RequestIdMiddleware)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=runtime_settings.allowed_origins,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Content-Type", "X-Request-ID", "X-CSRF-Token", "Idempotency-Key"],
+        allow_headers=[
+            "Content-Type",
+            "X-Request-ID",
+            "X-CSRF-Token",
+            "X-Public-Run-Token",
+            "Idempotency-Key",
+        ],
     )
     application.include_router(api_router, prefix="/api/v1")
 

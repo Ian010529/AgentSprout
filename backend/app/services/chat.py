@@ -484,6 +484,9 @@ def _finish_node(
     summary: dict[str, object],
 ) -> None:
     with resources.session_factory() as db:
+        run = db.get(ChatRun, run_id)
+        if run is not None and run.surface == "PUBLIC":
+            return
         _add_trace(
             db,
             run_id,
@@ -813,8 +816,26 @@ def _persist_final_result(resources: RuntimeResources, state: GraphState) -> Non
     calls = state.get("calls", [])
     with resources.session_factory() as db:
         run = db.get(ChatRun, state["run_id"])
-        if run is None or run.conversation_id is None:
+        if run is None:
             raise RuntimeError("chat run missing")
+        if run.surface == "PUBLIC":
+            run.phase = ChatPhase.COMPLETED.value
+            run.status = ChatStatus.COMPLETED.value
+            run.result_type = state["result_type"]
+            run.input_tokens = sum(call.input_tokens for call in calls)
+            run.output_tokens = sum(call.output_tokens for call in calls)
+            run.reasoning_tokens = sum(call.reasoning_tokens for call in calls)
+            run.provider_ms = sum(call.latency_ms for call in calls)
+            run.estimated_cost_usd = round(
+                run.input_tokens * 0.15 / 1_000_000 + run.output_tokens * 0.60 / 1_000_000,
+                8,
+            )
+            run.total_ms = round((now - as_utc(run.created_at)).total_seconds() * 1000)
+            run.finished_at = now
+            db.commit()
+            return
+        if run.conversation_id is None:
+            raise RuntimeError("chat conversation missing")
         output = Message(
             id=str(uuid4()),
             conversation_id=run.conversation_id,
@@ -917,6 +938,62 @@ def process_chat_run(resources: RuntimeResources, run_id: str) -> None:
     except Exception:
         logger.exception("Chat run failed", extra={"run_id": run_id})
         _fail_run(resources, run_id, "CHAT_RUNTIME_FAILED", False)
+
+
+def process_public_chat(
+    resources: RuntimeResources, run_id: str, message: str
+) -> ChatResultView | None:
+    try:
+        with resources.session_factory() as db:
+            run = db.get(ChatRun, run_id)
+            if run is None or run.surface != "PUBLIC" or run.status != ChatStatus.RUNNING.value:
+                return None
+            version = db.get(AgentVersion, run.version_id)
+            if version is None:
+                raise RuntimeError("public version missing")
+            state: GraphState = {
+                "run_id": run.id,
+                "message": message,
+                "audience_age": version.audience_age,
+                "tone": version.tone,
+                "response_length": version.response_length,
+                "custom_instructions": version.custom_instructions,
+                "intent": ChatIntent.KNOWLEDGE.value,
+                "retrieved": [],
+                "calls": [],
+                "generated_answer": "",
+                "cited_chunk_ids": (),
+                "result_type": "",
+                "final_answer": "",
+                "safety_category": "",
+            }
+        final = cast(GraphState, _build_graph(resources).invoke(state))
+        retrieved = {chunk.id: chunk for chunk in final.get("retrieved", [])}
+        citations = [
+            CitationView(
+                chunk_id=chunk_id,
+                filename=retrieved[chunk_id].filename,
+                page_number=retrieved[chunk_id].page_number,
+                excerpt=retrieved[chunk_id].text[:500],
+            )
+            for chunk_id in final.get("cited_chunk_ids", ())
+            if chunk_id in retrieved
+        ]
+        return ChatResultView(
+            type=ChatResultType(final["result_type"]),
+            answer=final["final_answer"],
+            citations=citations,
+        )
+    except RuntimeProviderError as error:
+        _fail_run(resources, run_id, error.code, error.retryable)
+    except ProviderOutputError:
+        _fail_run(resources, run_id, "OUTPUT_VALIDATION_FAILED", False)
+    except ApiError as error:
+        _fail_run(resources, run_id, error.code, error.retryable)
+    except Exception:
+        logger.exception("Public chat run failed", extra={"run_id": run_id})
+        _fail_run(resources, run_id, "CHAT_RUNTIME_FAILED", False)
+    return None
 
 
 PHASE_COPY = {

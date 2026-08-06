@@ -1,12 +1,10 @@
-import { PlannedRoute } from "@/components/planned-route";
+import { PublishedAgent } from "@/components/published-agent";
 
-export default function PublishedAgentPage() {
-  return (
-    <PlannedRoute
-      eyebrow="Published agent"
-      title="Only approved versions become public."
-      description="The responsive public chat and privacy-safe retention boundary will be implemented after review and publication rules pass."
-      module="M7 — Publish"
-    />
-  );
+export default async function PublishedAgentPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  return <PublishedAgent slug={slug} />;
 }

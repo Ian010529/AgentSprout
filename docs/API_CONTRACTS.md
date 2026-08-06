@@ -508,7 +508,7 @@ Atomically changes the agent's public version pointer. Returns the public URL pa
 
 ### `POST /studio/versions/{version_id}/withdraw`
 
-Teacher-only, currently published version only. Removes public availability and marks the version Withdrawn. It does not delete evaluation evidence or knowledge.
+Teacher-only, currently published version only. `Idempotency-Key` required. Removes public availability and marks the version Withdrawn. It does not delete evaluation evidence or knowledge.
 
 ## 10. Published Agent
 
@@ -537,6 +537,8 @@ Public, rate limited. `Idempotency-Key` required.
 ```
 
 Returns `202` with `run_id`, an opaque short-lived `run_token`, phase, and poll interval. The prompt is held in memory only after the privacy check and is not persisted.
+The token/result expires after ten minutes. Public run idempotency is process-local for the
+same expiry window because its safe response contains the short-lived token.
 
 ### `GET /public/runs/{run_id}`
 
@@ -551,6 +553,11 @@ Public stable errors include:
 - `PROVIDER_TEMPORARILY_UNAVAILABLE`
 
 ## 11. Admin maintenance
+
+### `POST /admin/seed-fixed-sample/{agent_id}`
+
+Not linked from UI. Requires `X-Admin-Reset-Token`. The Agent must already be
+published. Idempotently marks that Agent as the one reset-protected interview sample.
 
 ### `POST /admin/reset-demo-workspace`
 

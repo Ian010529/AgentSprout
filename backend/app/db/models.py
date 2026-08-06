@@ -42,6 +42,7 @@ class Agent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_fixed_sample: Mapped[int] = mapped_column(Integer, default=0)
 
 
 class AgentVersion(Base):

@@ -267,6 +267,29 @@ All decisions below were confirmed with the user before implementation. Changes 
   cost for unchanged source content, and makes every comparison value reproducible from
   persisted evidence rather than client arithmetic.
 
+### D-046 — M7 public transient runtime and fixed-sample marker
+
+- Date: 2026-08-06
+- Decision: Public prompts and validated answers live only in a process-memory result store
+  for ten minutes. SQLite stores a content-free `PUBLIC` chat-run row with keyed input
+  fingerprint, phase/result type, usage, latency, and safe error; public runs write no
+  messages, citations, or node traces. Opaque run tokens are retained only as keyed hashes.
+  Persistent hourly/daily public rate buckets use a separately scoped keyed client-IP hash.
+  A first-class `agents.is_fixed_sample` marker protects the seeded sample from admin reset;
+  reset deletes only unmarked Agent rows and their validated upload/vector resources.
+- Reason: Meets public minimization and restart behavior without introducing a queue or
+  durable content transport, keeps rate limits restart-safe, and makes reset preservation
+  explicit rather than relying on a slug convention.
+
+### D-047 — M7 explicit fixed-sample seed operation
+
+- Date: 2026-08-06
+- Decision: The fixed sample is selected only through the admin-secret
+  `POST /admin/seed-fixed-sample/{agent_id}` operation after it is published. Ordinary
+  publication never silently protects an Agent. Repeating the operation is safe.
+- Reason: Keeps reset protection intentional and auditable while avoiding a slug convention
+  or an implicit "first Agent" rule that could preserve the wrong interview data.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:
