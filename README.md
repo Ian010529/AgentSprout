@@ -1,192 +1,145 @@
+<div align="center">
+
 # AgentSprout Studio
 
-> Students build. Teachers evaluate. Safe agents get published.
+**Students build. Teachers evaluate. Safe agents get published.**
 
-AgentSprout Studio is an independent interview concept demo for a child-safe agent-building workflow. Students define and test a knowledge-grounded agent, teachers run reproducible evaluations, and only approved versions can be published.
+[![Live Demo](https://img.shields.io/badge/demo-live-146b64?style=flat-square)](https://agentsprout.vercel.app/p/ocean-explorer)
+[![CI](https://img.shields.io/github/actions/workflow/status/Ian010529/AgentSprout/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/Ian010529/AgentSprout/actions/workflows/ci.yml)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](backend/pyproject.toml)
+[![Next.js 16](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=next.js)](frontend/package.json)
 
-This project is inspired by publicly described needs in AI education and a public AI Software Engineer job description. It is not affiliated with, endorsed by, or produced by Bytewise Coding. No Bytewise trademarks, logos, course assets, or private materials are used.
+[Public Agent](https://agentsprout.vercel.app/p/ocean-explorer) ·
+[Protected Studio](https://agentsprout.vercel.app/access) ·
+[Cloud evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md)
 
-## Live demo
+</div>
 
-- [Open the published Ocean Explorer](https://agentsprout.vercel.app/p/ocean-explorer)
-- [Open the protected Studio](https://agentsprout.vercel.app/access) — the access code is shared privately
-- [View the public GitHub repository](https://github.com/Ian010529/AgentSprout)
-- [Inspect the accepted application CI run](https://github.com/Ian010529/AgentSprout/actions/runs/31080861188)
+AgentSprout is a deployed full-stack concept for building child-safe, knowledge-grounded AI
+agents. A student defines and tests an Agent, a teacher evaluates the immutable version against
+16 fixed cases, and only an approved version can be published.
 
-M1–M8 are accepted. The cloud vertical has passed real OpenAI ingestion/RAG, privacy blocking,
-the 16-case Teacher evaluation, approval/publication, Railway volume restart, desktop Chromium,
-375 px WebKit, axe accessibility, reset, and repeat-run checks. See the
-[cloud acceptance evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md).
+> [!NOTE]
+> This is an independent interview project inspired by public AI-education needs. It is not
+> affiliated with or endorsed by Bytewise Coding and uses no private company materials.
 
-## Five-minute demo outcome
+## What it demonstrates
 
-1. Enter the protected Studio.
-2. Create **Ocean Explorer** from the Knowledge Explorer template.
-3. Define the problem, intended users, success goal, audience age, and response behavior.
-4. Upload NOAA's CC0 *Ocean Literacy* PDF.
-5. Ask a grounded question and inspect page-level citations.
-6. Demonstrate out-of-knowledge refusal, privacy blocking, homework guidance, and prompt-injection resistance.
-7. Submit a version for teacher review.
-8. Run 16 fixed evaluation cases and inspect failures, latency, token use, and traces.
-9. Create v2 with a required change reflection and compare it with v1.
-10. Approve and publish the passing version to a mobile-friendly public page.
+- **Real RAG:** PDF ingestion, page-aware chunking, OpenAI embeddings, Chroma retrieval, and validated citations.
+- **Safety before generation:** PII is blocked before provider calls or raw persistence; homework, injection, moderation, and knowledge-boundary routes are explicit.
+- **Agent evaluation:** 16 persisted cases combine deterministic checks with a structured Teacher Judge and release thresholds.
+- **Product lifecycle:** Draft → immutable review → requested changes/v2 comparison → approval → public release/withdrawal.
+- **Observable model-development workflow:** pinned models, sanitized traces, latency, token usage, cost estimates, retries, and failure evidence.
+- **Production-shaped delivery:** responsive UI, accessibility checks, Docker, CI, HTTPS deployment, persistent storage, reset, and restart verification.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    Browser["Browser"] --> Vercel["Next.js on Vercel"]
+    Vercel -->|"same-origin /api-proxy"| API["FastAPI + LangGraph on Railway"]
+    API --> OpenAI["OpenAI APIs"]
+    API --> SQLite["SQLite"]
+    API --> Chroma["ChromaDB"]
+    API --> Files["Uploads"]
+    SQLite --> Volume["Railway persistent volume"]
+    Chroma --> Volume
+    Files --> Volume
+```
+
+The same-origin proxy keeps Studio cookies first-party while Railway still enforces Origin,
+CSRF, role, and session checks. The demo intentionally uses one backend replica and one volume.
+
+## Five-minute interview flow
+
+1. Create **Ocean Explorer** and upload NOAA's public-domain *Ocean Literacy* PDF.
+2. Ask a normal question and open its page-level citations.
+3. Show privacy blocking, guided homework help, and prompt-injection resistance.
+4. Submit the immutable version and run the 16-case Teacher evaluation.
+5. Inspect a failure, model usage, trace evidence, and the release gate.
+6. Approve, publish, and open the responsive public Agent.
+
+## Acceptance snapshot
+
+| Check | Production result |
+|---|---:|
+| Real cloud lifecycle | 2 min 44.6 sec |
+| Reset-to-publish rehearsal | 1 min 28.8 sec |
+| Teacher evaluation | 16/16 completed, 15 passed, 0 errors, release eligible |
+| Post-restart RAG | 7.5 sec, 4 validated citations |
+| Browser accessibility | 0 axe violations in desktop Chromium and 375 px WebKit |
+| Persistence | SQLite, Chroma, upload, evaluation, and publication survived restart |
+
+Full measurements, models, usage, and deployment IDs are recorded in the
+[cloud acceptance report](docs/evidence/M8_CLOUD_ACCEPTANCE.md).
 
 ## Stack
 
-- Frontend: Next.js 16, TypeScript, React 19, and selected assistant-ui conversation primitives
-- Backend: Python 3.12, FastAPI, and a typed LangGraph runtime
-- Business data: SQLite
-- Vector data: embedded persistent ChromaDB
-- Models: OpenAI Responses, Embeddings, and Moderation APIs
-- Hosting: Vercel frontend; Railway backend with a persistent volume
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 16, React 19, TypeScript, assistant-ui |
+| Backend | Python 3.12, FastAPI, typed LangGraph runtime |
+| Models | `gpt-4o-mini`, `gpt-4.1-mini`, `text-embedding-3-small`, Moderation API |
+| Data | SQLite, embedded persistent ChromaDB, local-volume uploads |
+| Delivery | Docker, GitHub Actions, Vercel, Railway |
 
-Direct backend versions live in [`backend/pyproject.toml`](backend/pyproject.toml), the complete Python environment is frozen in [`backend/requirements.lock`](backend/requirements.lock), and frontend packages are locked in [`frontend/pnpm-lock.yaml`](frontend/pnpm-lock.yaml).
+## Quick start
 
-## Local setup
-
-Required versions:
-
-- Python 3.12.x (verified with 3.12.13)
-- Node 24.x (verified with 24.14.0)
-- pnpm 11.9.0
-
-Create the project-local Python environment from the repository root. These commands do not modify system Python:
+Requirements: Python 3.12, Node 24, pnpm 11.9, and an OpenAI API key.
 
 ```bash
+git clone https://github.com/Ian010529/AgentSprout.git
+cd AgentSprout
+
 python3.12 -m venv backend/.venv
 backend/.venv/bin/python -m pip install --upgrade "pip==25.3"
 backend/.venv/bin/python -m pip install -r backend/requirements.lock
 backend/.venv/bin/python -m pip install -e backend --no-deps
-```
 
-Install the frontend from its lockfile:
-
-```bash
-cd frontend
-pnpm install --frozen-lockfile
-cd ..
-```
-
-Copy the environment template and replace every placeholder. Keep the resulting `.env` local. M1 does not spend OpenAI tokens, but startup intentionally fails if required provider and session configuration is absent.
-
-```bash
+cd frontend && pnpm install --frozen-lockfile && cd ..
 cp .env.example .env
+backend/.venv/bin/python scripts/download_noaa_source.py
+cd backend && .venv/bin/alembic upgrade head && cd ..
 ```
 
-Migrate the SQLite database from an empty data directory:
+Replace every placeholder in `.env`, then start the two processes:
 
 ```bash
-cd backend
-.venv/bin/alembic upgrade head
-cd ..
+# Terminal 1
+cd backend && .venv/bin/uvicorn app.main:create_app --factory --reload --port 8000
+
+# Terminal 2
+cd frontend && pnpm dev
 ```
 
-Start the backend in one terminal:
+Open <http://localhost:3000>. Runtime deliberately fails clearly when required secrets or the
+configured OpenAI models are unavailable; there is no fake/offline model fallback.
+
+## Verification
 
 ```bash
-cd backend
-.venv/bin/uvicorn app.main:create_app --factory --reload --port 8000
+cd backend && .venv/bin/ruff check app tests alembic && .venv/bin/pyright && .venv/bin/pytest
+cd ../frontend && pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-Start the frontend in another terminal:
+CI additionally runs the complete provider-boundary browser lifecycle, WebKit mobile checks,
+axe, empty migrations, Git-history secret/runtime scans, Docker build, and volume restart.
 
-```bash
-cd frontend
-pnpm dev
-```
+## Documentation
 
-Open <http://localhost:3000>. The development status card calls the real readiness endpoint and reports SQLite, Chroma, uploads, and migration state. Direct API checks are available at:
+- [Architecture](docs/ARCHITECTURE.md) and [API contracts](docs/API_CONTRACTS.md)
+- [Safety and privacy](docs/SECURITY_AND_PRIVACY.md)
+- [Evaluation suite](docs/EVALUATION_SUITE.md) and [test strategy](docs/TEST_STRATEGY.md)
+- [Deployment plan](docs/DEPLOYMENT.md) and [demo runbook](docs/DEMO_RUNBOOK.md)
+- [Cloud acceptance evidence](docs/evidence/M8_CLOUD_ACCEPTANCE.md)
 
-```bash
-curl http://localhost:8000/api/v1/health
-curl http://localhost:8000/api/v1/ready
-```
+## Scope and limitations
 
-## Quality checks
+This is a supervised concept MVP, not a production child service. It does not provide child
+accounts, parental consent, school identity, distributed jobs, managed multi-replica storage,
+incident operations, or legal/safeguarding approval. Public chat content is memory-only and
+rate-limited; Studio content follows the documented retention policy. Public metadata may remain
+cached for up to 60 seconds after withdrawal.
 
-```bash
-cd backend
-.venv/bin/ruff check app tests alembic
-.venv/bin/ruff format --check app tests alembic
-.venv/bin/pyright
-.venv/bin/pytest
-
-cd ../frontend
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-```
-
-No `.env`, API key, access code, runtime database, vector data, upload, or log belongs in Git.
-
-CI additionally runs the complete provider-boundary browser lifecycle in Chromium and
-mobile WebKit, axe accessibility checks, an empty migration, Git history/runtime-data scans,
-Docker build/start/restart checks, and documentation-link validation. Real OpenAI smoke tests
-are a separate manually dispatched workflow so ordinary pushes do not spend provider tokens.
-
-## Production container
-
-Build the same backend image used by Railway from the repository root:
-
-```bash
-docker build --tag agentsprout-api:local .
-```
-
-The entrypoint migrates the mounted database before startup and runs the application as an
-unprivileged user. Production requires one persistent volume at `/app/data`, one backend
-replica, exact HTTPS CORS origin configuration, and secrets entered outside Git. See the
-[deployment plan](docs/DEPLOYMENT.md) for the verified Railway/Vercel settings, current plan
-limits, and cost boundary.
-
-Production browser traffic uses Vercel's same-origin `/api-proxy` rewrite to Railway so the
-Studio session does not depend on third-party cookie acceptance. Local development continues
-to call the backend directly.
-
-## Documentation map
-
-- [Product requirements](docs/PRD.md)
-- [UX and frontend behavior](docs/UX_SPEC.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Data model](docs/DATA_MODEL.md)
-- [API contracts](docs/API_CONTRACTS.md)
-- [Security and privacy](docs/SECURITY_AND_PRIVACY.md)
-- [Test strategy](docs/TEST_STRATEGY.md)
-- [Acceptance tests](docs/ACCEPTANCE_TESTS.md)
-- [Deployment plan](docs/DEPLOYMENT.md)
-- [Demo runbook](docs/DEMO_RUNBOOK.md)
-- [Decision log](docs/DECISION_LOG.md)
-- [Module plans](docs/modules/)
-
-## Knowledge source
-
-The example knowledge base is NOAA's accessible 2024 *Ocean Literacy: The Essential
-Principles and Fundamental Concepts of Ocean Sciences for Learners of All Ages*. NOAA
-identifies the document as CC0 Public Domain. Download the unchanged, checksum-locked file
-with `python scripts/download_noaa_source.py`; the complete verification record is in
-[`docs/KNOWLEDGE_SOURCE.md`](docs/KNOWLEDGE_SOURCE.md).
-
-Source: <https://repository.library.noaa.gov/view/noaa/67228>
-
-## Demo data and limitations
-
-For the local interview path, publish with slug `ocean-explorer`, then open
-<http://localhost:3000/p/ocean-explorer>. After confirming that publication, protect this
-single canonical sample from demo resets with the admin-only seed operation:
-
-```bash
-curl -X POST \
-  -H 'X-Admin-Reset-Token: <ADMIN_RESET_TOKEN>' \
-  http://localhost:8000/api/v1/admin/seed-fixed-sample/<AGENT_ID>
-```
-
-Public prompts and validated answers are held only in backend process memory for ten
-minutes. SQLite retains content-free run usage/safety metadata, and public requests are
-independently rate limited from Studio chat.
-
-This is a supervised concept MVP, not a production child service. It intentionally uses one
-Railway replica, SQLite, and embedded Chroma on one volume. It does not include child accounts,
-parental consent, school identity, durable distributed jobs, incident operations, or legal and
-safeguarding approval. Public metadata is cached for up to 60 seconds, so a withdrawn/reset
-temporary slug can remain visible briefly while new chat attempts are already rejected by the
-backend.
+The demo source is NOAA's unchanged, checksum-verified 2024 *Ocean Literacy* PDF, identified by
+NOAA as CC0 Public Domain. See [source and attribution details](docs/KNOWLEDGE_SOURCE.md).
