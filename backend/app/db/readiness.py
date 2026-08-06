@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import Settings
 from app.db.migrations import migrations_are_current
-from app.providers.contracts import ChatProvider, EmbeddingProvider
+from app.providers.contracts import ChatProvider, EmbeddingProvider, JudgeProvider
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,6 +23,7 @@ class RuntimeResources:
     session_factory: sessionmaker[Session]
     embedding_provider: EmbeddingProvider
     chat_provider: ChatProvider
+    judge_provider: JudgeProvider
 
 
 def create_chroma_client(settings: Settings) -> ClientAPI:

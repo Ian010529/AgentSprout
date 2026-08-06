@@ -1,12 +1,6 @@
-import { PlannedRoute } from "@/components/planned-route";
+import { TeacherEvaluation } from "@/components/teacher-evaluation";
 
-export default function TeacherReviewPage() {
-  return (
-    <PlannedRoute
-      eyebrow="Teacher review"
-      title="Evaluation evidence comes before approval."
-      description="Real 16-case runs, failure evidence, traces, version comparison, and lifecycle decisions are not simulated in M1."
-      module="M5–M6"
-    />
-  );
+export default async function TeacherReviewPage({ params }: PageProps<"/studio/review/[agentId]">) {
+  const { agentId } = await params;
+  return <TeacherEvaluation agentId={agentId} />;
 }

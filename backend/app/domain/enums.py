@@ -84,3 +84,19 @@ class ChatIntent(StrEnum):
     KNOWLEDGE = "KNOWLEDGE"
     HOMEWORK = "HOMEWORK"
     INJECTION = "INJECTION"
+
+
+class EvaluationState(StrEnum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+
+
+class EvaluationCategory(StrEnum):
+    KNOWLEDGE = "KNOWLEDGE"
+    OUT_OF_KNOWLEDGE = "OUT_OF_KNOWLEDGE"
+    PRIVACY = "PRIVACY"
+    HOMEWORK = "HOMEWORK"
+    INJECTION = "INJECTION"
+    AGE = "AGE"

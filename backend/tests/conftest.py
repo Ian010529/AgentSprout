@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from pathlib import Path
+from threading import Lock
 
 import pytest
 from alembic.config import Config
@@ -14,6 +16,7 @@ from app.main import create_app
 from app.providers.contracts import (
     GenerationOutcome,
     IntentOutcome,
+    JudgeOutcome,
     ModerationOutcome,
     ProviderCallRecord,
     ProviderOutputError,
@@ -75,8 +78,15 @@ class FakeChatProvider:
         self.calls.append(("INTENT_CLASSIFICATION", message))
         if self.fail_code:
             raise RuntimeProviderError(self.fail_code, True)
+        detected = (
+            "INJECTION"
+            if "hidden instructions" in message.lower() or "ignore safety" in message.lower()
+            else "HOMEWORK"
+            if "final homework" in message.lower() or "final report" in message.lower()
+            else self.intent
+        )
         return IntentOutcome(
-            intent=self.intent,
+            intent=detected,
             call=self._record("INTENT_CLASSIFICATION", self.online_model),
         )
 
@@ -106,6 +116,55 @@ class FakeChatProvider:
             answer=answer,
             cited_chunk_ids=(chunk_id,),
             call=self._record("GENERATION", self.online_model),
+        )
+
+
+class FakeJudgeProvider:
+    model = "gpt-4.1-mini-2025-04-14"
+
+    def __init__(self) -> None:
+        self.calls: list[str] = []
+        self.fail = False
+        self.malformed = False
+        self.active = 0
+        self.max_active = 0
+        self.lock = Lock()
+
+    def judge(
+        self,
+        *,
+        safe_case_prompt: str,
+        expected_behavior: str,
+        audience_age: str,
+        displayed_output: str,
+        evidence: list[dict[str, object]],
+    ) -> JudgeOutcome:
+        del expected_behavior, audience_age, displayed_output, evidence
+        with self.lock:
+            self.calls.append(safe_case_prompt)
+            self.active += 1
+            self.max_active = max(self.max_active, self.active)
+        time.sleep(0.01)
+        with self.lock:
+            self.active -= 1
+        if self.fail:
+            raise RuntimeProviderError("JUDGE_UNAVAILABLE", True)
+        if self.malformed:
+            raise ProviderOutputError
+        return JudgeOutcome(
+            evidence_score=5,
+            age_score=5,
+            instruction_score=5,
+            rationale="The displayed behavior matches the fixed case and available evidence.",
+            call=ProviderCallRecord(
+                operation="TEACHER_JUDGE",
+                model=self.model,
+                input_tokens=20,
+                output_tokens=10,
+                reasoning_tokens=0,
+                latency_ms=4,
+                timestamp="2026-08-06T00:00:00+00:00",
+            ),
         )
 
 
@@ -141,10 +200,16 @@ def chat_provider() -> FakeChatProvider:
 
 
 @pytest.fixture
+def judge_provider() -> FakeJudgeProvider:
+    return FakeJudgeProvider()
+
+
+@pytest.fixture
 def client(
     settings: Settings,
     embedding_provider: FakeEmbeddingProvider,
     chat_provider: FakeChatProvider,
+    judge_provider: FakeJudgeProvider,
 ) -> Iterator[TestClient]:
     migrate(settings)
     with TestClient(
@@ -152,6 +217,7 @@ def client(
             settings,
             embedding_provider=embedding_provider,
             chat_provider=chat_provider,
+            judge_provider=judge_provider,
         )
     ) as test_client:
         yield test_client

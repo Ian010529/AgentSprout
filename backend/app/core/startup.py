@@ -5,9 +5,17 @@ import logging
 from sqlalchemy import inspect, select
 
 from app.core.security import utc_now
-from app.db.models import ChatRun, IngestionJob, KnowledgeDocument
+from app.db.models import ChatRun, EvaluationRun, IngestionJob, KnowledgeDocument
 from app.db.readiness import RuntimeResources
-from app.domain.enums import ChatPhase, ChatResultType, ChatStatus, DocumentStatus, IngestionState
+from app.domain.enums import (
+    ChatPhase,
+    ChatResultType,
+    ChatStatus,
+    DocumentStatus,
+    EvaluationState,
+    IngestionState,
+)
+from app.services.evaluation import seed_evaluation_suite
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +44,9 @@ def run_startup_maintenance(resources: RuntimeResources) -> None:
                 document.status = DocumentStatus.FAILED.value
                 document.error_code = "SERVICE_RESTARTED"
         db.commit()
+    if inspect(resources.engine).has_table("evaluation_cases"):
+        with resources.session_factory() as db:
+            seed_evaluation_suite(db)
     if not inspect(resources.engine).has_table("chat_runs"):
         return
     with resources.session_factory() as db:
@@ -48,4 +59,20 @@ def run_startup_maintenance(resources: RuntimeResources) -> None:
             run.safe_error_message = "The service restarted. Send this message again."
             run.finished_at = now
         db.commit()
+    if inspect(resources.engine).has_table("evaluation_runs"):
+        with resources.session_factory() as db:
+            evaluations = list(
+                db.scalars(
+                    select(EvaluationRun).where(
+                        EvaluationRun.state.in_(
+                            [EvaluationState.QUEUED.value, EvaluationState.RUNNING.value]
+                        )
+                    )
+                )
+            )
+            for evaluation in evaluations:
+                evaluation.state = EvaluationState.FAILED.value
+                evaluation.error_code = "SERVICE_RESTARTED"
+                evaluation.finished_at = now
+            db.commit()
     logger.info("Startup maintenance complete")

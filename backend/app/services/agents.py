@@ -20,16 +20,37 @@ from app.api.schemas import (
 )
 from app.core.config import Settings
 from app.core.security import as_utc, canonical_hash, keyed_hash, utc_now
-from app.db.models import Agent, AgentVersion, AuditEvent, DemoSession, IdempotencyRecord
-from app.domain.enums import AudienceAge, ResponseLength, Role, Tone, VersionState
+from app.db.models import (
+    Agent,
+    AgentVersion,
+    AuditEvent,
+    ChatRun,
+    DemoSession,
+    IdempotencyRecord,
+    IngestionJob,
+    KnowledgeDocument,
+)
+from app.domain.enums import (
+    AudienceAge,
+    ChatStatus,
+    DocumentStatus,
+    IngestionState,
+    ResponseLength,
+    Role,
+    Tone,
+    VersionState,
+)
 from app.services.knowledge import get_knowledge_view
 
 CREATE_SCOPE = "CREATE_AGENT"
+SUBMIT_SCOPE = "SUBMIT_VERSION"
 
 
 def _allowed_actions(role: str, state: str) -> list[str]:
     if role == Role.STUDENT.value and state == VersionState.DRAFT.value:
-        return ["EDIT_DRAFT"]
+        return ["EDIT_DRAFT", "SUBMIT_VERSION"]
+    if role == Role.TEACHER.value and state == VersionState.IN_REVIEW.value:
+        return ["RUN_EVALUATION"]
     return []
 
 
@@ -38,6 +59,10 @@ def _next_action(role: str, state: str) -> str:
         return "Continue defining the agent"
     if role == Role.TEACHER.value and state == VersionState.DRAFT.value:
         return "Waiting for student submission"
+    if role == Role.TEACHER.value and state == VersionState.IN_REVIEW.value:
+        return "Run the fixed evaluation suite"
+    if state == VersionState.IN_REVIEW.value:
+        return "Waiting for teacher evaluation"
     return "No action available"
 
 
@@ -124,9 +149,16 @@ def list_agents(
     )
     summaries: list[AgentSummary] = []
     for agent in agents:
-        if agent.current_draft_version_id is None:
-            continue
-        version = db.get(AgentVersion, agent.current_draft_version_id)
+        version = (
+            db.get(AgentVersion, agent.current_draft_version_id)
+            if agent.current_draft_version_id
+            else db.scalar(
+                select(AgentVersion)
+                .where(AgentVersion.agent_id == agent.id)
+                .order_by(AgentVersion.version_number.desc())
+                .limit(1)
+            )
+        )
         if version is None:
             continue
         if state is not None and version.state != state.value:
@@ -307,3 +339,96 @@ def update_version(
     )
     db.commit()
     return _version_detail(db, version, session.role)
+
+
+def submit_version(
+    db: Session,
+    settings: Settings,
+    session: DemoSession,
+    version_id: str,
+    idempotency_key: str | None,
+) -> VersionDetail:
+    _require_student(session)
+    if not idempotency_key or not 8 <= len(idempotency_key) <= 200:
+        raise ApiError(400, "IDEMPOTENCY_KEY_REQUIRED", "A valid submission key is required.")
+    key_hash = keyed_hash(settings, "idempotency", idempotency_key)
+    request_hash = canonical_hash({"version_id": version_id})
+    replay = db.scalar(
+        select(IdempotencyRecord).where(
+            IdempotencyRecord.session_id == session.id,
+            IdempotencyRecord.scope == SUBMIT_SCOPE,
+            IdempotencyRecord.key_hash == key_hash,
+        )
+    )
+    if replay is not None and as_utc(replay.expires_at) > utc_now():
+        if replay.request_hash != request_hash:
+            raise ApiError(409, "IDEMPOTENCY_CONFLICT", "This submission key was already used.")
+        return VersionDetail.model_validate_json(replay.response_body)
+    version = db.get(AgentVersion, version_id)
+    if version is None:
+        raise ApiError(404, "VERSION_NOT_FOUND", "The Agent version was not found.")
+    if version.state != VersionState.DRAFT.value:
+        raise ApiError(409, "VERSION_IMMUTABLE", "This version is already submitted.")
+    document = (
+        db.get(KnowledgeDocument, version.active_document_id)
+        if version.active_document_id
+        else None
+    )
+    if document is None or document.status != DocumentStatus.READY.value:
+        raise ApiError(409, "KNOWLEDGE_NOT_READY", "Add a Ready source before submission.")
+    active_ingestion = db.scalar(
+        select(IngestionJob).where(
+            IngestionJob.state.in_(
+                [
+                    IngestionState.UPLOADED.value,
+                    IngestionState.EXTRACTING.value,
+                    IngestionState.CHUNKING.value,
+                    IngestionState.EMBEDDING.value,
+                ]
+            )
+        )
+    )
+    active_chat = db.scalar(
+        select(ChatRun).where(
+            ChatRun.version_id == version_id, ChatRun.status == ChatStatus.RUNNING.value
+        )
+    )
+    if active_ingestion is not None or active_chat is not None:
+        raise ApiError(409, "VERSION_BUSY", "Wait for active work before submission.")
+    now = utc_now()
+    version.state = VersionState.IN_REVIEW.value
+    version.submitted_at = now
+    version.updated_at = now
+    agent = db.get(Agent, version.agent_id)
+    if agent is None:
+        raise ApiError(404, "AGENT_NOT_FOUND", "The Agent was not found.")
+    agent.current_draft_version_id = None
+    agent.updated_at = now
+    response = _version_detail(db, version, session.role)
+    db.add(
+        IdempotencyRecord(
+            id=str(uuid4()),
+            session_id=session.id,
+            scope=SUBMIT_SCOPE,
+            key_hash=key_hash,
+            request_hash=request_hash,
+            response_status=200,
+            response_body=response.model_dump_json(),
+            created_at=now,
+            expires_at=now + timedelta(hours=settings.idempotency_hours),
+        )
+    )
+    db.add(
+        AuditEvent(
+            id=str(uuid4()),
+            session_id=session.id,
+            actor_type="DEMO_SESSION",
+            action="VERSION_SUBMITTED",
+            target_type="AGENT_VERSION",
+            target_id=version.id,
+            result="SUCCESS",
+            created_at=now,
+        )
+    )
+    db.commit()
+    return response

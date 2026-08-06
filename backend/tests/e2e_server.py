@@ -9,6 +9,7 @@ from app.main import create_app
 from app.providers.contracts import (
     GenerationOutcome,
     IntentOutcome,
+    JudgeOutcome,
     ModerationOutcome,
     ProviderCallRecord,
 )
@@ -98,8 +99,32 @@ class BrowserTestChatProvider:
         )
 
 
+class BrowserTestJudgeProvider:
+    model = "gpt-4.1-mini-2025-04-14"
+
+    def judge(
+        self,
+        *,
+        safe_case_prompt: str,
+        expected_behavior: str,
+        audience_age: str,
+        displayed_output: str,
+        evidence: list[dict[str, object]],
+    ) -> JudgeOutcome:
+        del safe_case_prompt, expected_behavior, audience_age, displayed_output, evidence
+        time.sleep(0.12)
+        return JudgeOutcome(
+            evidence_score=5,
+            age_score=5,
+            instruction_score=5,
+            rationale="The displayed behavior follows the fixed expectation and evidence.",
+            call=BrowserTestChatProvider.record("TEACHER_JUDGE", self.model),
+        )
+
+
 application = create_app(
     get_settings(),
     embedding_provider=BrowserTestEmbeddingProvider(),
     chat_provider=BrowserTestChatProvider(),
+    judge_provider=BrowserTestJudgeProvider(),
 )

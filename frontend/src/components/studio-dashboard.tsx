@@ -166,6 +166,7 @@ export function StudioDashboard() {
   }
 
   const isStudent = state.role === "STUDENT";
+  const submittedCount = state.agents.filter((agent) => agent.current_version.state === "IN_REVIEW").length;
   return (
     <StudioShell
       role={state.role}
@@ -214,8 +215,8 @@ export function StudioDashboard() {
         ) : (
           <section className="review-shell" aria-labelledby="review-title">
             <p className="eyebrow">Review priority</p>
-            <h2 id="review-title">Nothing is waiting for review.</h2>
-            <p>Drafts remain visible below, but only submitted versions can be evaluated.</p>
+            <h2 id="review-title">{submittedCount ? `${submittedCount} Agent${submittedCount === 1 ? " is" : "s are"} ready.` : "Nothing is waiting for review."}</h2>
+            <p>{submittedCount ? "Open a submitted Agent to run or inspect its fixed evaluation suite." : "Drafts remain visible below, but only submitted versions can be evaluated."}</p>
           </section>
         )}
 
@@ -249,7 +250,7 @@ export function StudioDashboard() {
                   <h3>{agent.display_name}</h3>
                   <p>{agent.next_action}</p>
                   <div className={`knowledge-line knowledge-line--${agent.current_version.knowledge_status.toLowerCase()}`}><span aria-hidden="true" /> Knowledge {agent.current_version.knowledge_status.toLowerCase().replace("_", " ")}</div>
-                  <Link href={`/studio/agents/${agent.id}`}>{isStudent ? "Continue Draft →" : "View Draft →"}</Link>
+                  <Link href={agent.current_version.state === "IN_REVIEW" ? `/studio/review/${agent.id}` : `/studio/agents/${agent.id}`}>{agent.current_version.state === "IN_REVIEW" ? "Open review →" : isStudent ? "Continue Draft →" : "View Draft →"}</Link>
                 </article>
               ))}
             </div>

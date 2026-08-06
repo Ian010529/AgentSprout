@@ -240,6 +240,19 @@ All decisions below were confirmed with the user before implementation. Changes 
   runtime graph inspectable in Teacher traces, and confines OpenAI SDK objects and raw
   model output to the provider/runtime boundary.
 
+### D-044 — M5 suite, Judge, and evaluation execution boundary
+
+- Date: 2026-08-06
+- Decision: Seed immutable suite `ocean-literacy-v1` and rubric `teacher-rubric-v1` from
+  the reviewed NOAA pages recorded in `docs/EVALUATION_SUITE.md`. Execute each case through
+  the accepted M4 runtime with at most three worker threads, then persist deterministic
+  checks before applying the pinned `gpt-4.1-mini-2025-04-14` structured Judge. Privacy
+  cases hydrate synthetic contact canaries only in memory, stop before every provider, and
+  are scored deterministically without sending the canary to the Judge. Evaluation-specific
+  audience modes are stored on internal chat runs without mutating the submitted version.
+- Reason: Reuses the product runtime, preserves the pre-provider PII guarantee, makes suite
+  evidence reproducible, and prevents evaluation inputs from changing immutable Agent state.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

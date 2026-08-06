@@ -83,6 +83,30 @@ class GenerationOutcome:
     call: ProviderCallRecord
 
 
+@dataclass(frozen=True, slots=True)
+class JudgeOutcome:
+    evidence_score: int
+    age_score: int
+    instruction_score: int
+    rationale: str
+    call: ProviderCallRecord
+
+
+class JudgeProvider(Protocol):
+    @property
+    def model(self) -> str: ...
+
+    def judge(
+        self,
+        *,
+        safe_case_prompt: str,
+        expected_behavior: str,
+        audience_age: str,
+        displayed_output: str,
+        evidence: list[dict[str, object]],
+    ) -> JudgeOutcome: ...
+
+
 class ChatProvider(Protocol):
     @property
     def online_model(self) -> str: ...

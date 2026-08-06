@@ -17,9 +17,10 @@ from app.core.request_id import RequestIdMiddleware
 from app.core.startup import run_startup_maintenance
 from app.db.engine import create_session_factory, create_sqlite_engine
 from app.db.readiness import RuntimeResources, create_chroma_client
-from app.providers.contracts import ChatProvider, EmbeddingProvider
+from app.providers.contracts import ChatProvider, EmbeddingProvider, JudgeProvider
 from app.providers.openai_chat import OpenAIChatProvider
 from app.providers.openai_embeddings import OpenAIEmbeddingProvider
+from app.providers.openai_judge import OpenAIJudgeProvider
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ def create_app(
     settings: Settings | None = None,
     embedding_provider: EmbeddingProvider | None = None,
     chat_provider: ChatProvider | None = None,
+    judge_provider: JudgeProvider | None = None,
 ) -> FastAPI:
     configure_logging()
     runtime_settings = settings or get_settings()
@@ -40,6 +42,7 @@ def create_app(
         session_factory=create_session_factory(engine),
         embedding_provider=embedding_provider or OpenAIEmbeddingProvider(runtime_settings),
         chat_provider=chat_provider or OpenAIChatProvider(runtime_settings),
+        judge_provider=judge_provider or OpenAIJudgeProvider(runtime_settings),
     )
 
     @asynccontextmanager
@@ -59,6 +62,8 @@ def create_app(
     application.state.ingestion_job_ids = set()
     application.state.chat_tasks = set()
     application.state.chat_run_ids = set()
+    application.state.evaluation_tasks = set()
+    application.state.evaluation_run_ids = set()
     application.add_middleware(RequestIdMiddleware)
     application.add_middleware(
         CORSMiddleware,

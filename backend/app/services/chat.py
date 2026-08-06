@@ -170,7 +170,7 @@ def _window_bucket(
     db.commit()
 
 
-def _reserve_global_model_call(resources: RuntimeResources) -> None:
+def reserve_global_model_call(resources: RuntimeResources) -> None:
     with resources.session_factory() as db:
         _window_bucket(
             db,
@@ -370,6 +370,7 @@ def create_chat_run(
         version_id=version_id,
         conversation_id=conversation.id,
         surface="STUDIO",
+        audience_age_override=None,
         phase=ChatPhase.QUEUED.value,
         status=ChatStatus.RUNNING.value,
         result_type=None,
@@ -545,7 +546,7 @@ def _build_graph(resources: RuntimeResources) -> Any:
     def classify_intent(state: GraphState) -> dict[str, Any]:
         started_at = _begin_node(resources, state["run_id"], ChatPhase.INTENT_CLASSIFICATION)
         started_clock = time.perf_counter()
-        _reserve_global_model_call(resources)
+        reserve_global_model_call(resources)
         outcome = resources.chat_provider.classify(state["message"])
         _finish_node(
             resources,
@@ -632,7 +633,7 @@ def _build_graph(resources: RuntimeResources) -> Any:
     def generate_answer(state: GraphState) -> dict[str, Any]:
         started_at = _begin_node(resources, state["run_id"], ChatPhase.GENERATION)
         started_clock = time.perf_counter()
-        _reserve_global_model_call(resources)
+        reserve_global_model_call(resources)
         evidence: list[dict[str, object]] = [
             {
                 "chunk_id": chunk.id,
@@ -892,7 +893,7 @@ def process_chat_run(resources: RuntimeResources, run_id: str) -> None:
             state: GraphState = {
                 "run_id": run.id,
                 "message": input_message.content,
-                "audience_age": version.audience_age,
+                "audience_age": run.audience_age_override or version.audience_age,
                 "tone": version.tone,
                 "response_length": version.response_length,
                 "custom_instructions": version.custom_instructions,

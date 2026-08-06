@@ -2,7 +2,8 @@
 
 ## Status
 
-Pending M4 acceptance.
+Accepted on 2026-08-06. Reproducible evidence is recorded in
+[`docs/evidence/M5_ACCEPTANCE.md`](../evidence/M5_ACCEPTANCE.md).
 
 ## Vertical outcome
 
@@ -103,11 +104,11 @@ The Student submits an immutable v1, the Teacher starts a real 16-case evaluatio
 
 ## Exit gate
 
-- [ ] Exact 16-case suite and evidence map are reviewed.
-- [ ] Async progress and refresh behavior pass.
-- [ ] Real suite results are not hard-coded.
-- [ ] Thresholds and infrastructure-error blocking pass.
-- [ ] Submitted version is immutable.
-- [ ] M1–M4 regressions pass.
-- [ ] Live report records models/time/usage/cost.
-- [ ] Evidence is recorded before moving to M6.
+- [x] Exact 16-case suite and evidence map are reviewed.
+- [x] Async progress and refresh behavior pass.
+- [x] Real suite results are not hard-coded.
+- [x] Thresholds and infrastructure-error blocking pass.
+- [x] Submitted version is immutable.
+- [x] M1–M4 regressions pass.
+- [x] Live report records models/time/usage/cost.
+- [x] Evidence is recorded before moving to M6.

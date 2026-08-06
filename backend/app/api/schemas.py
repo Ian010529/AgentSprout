@@ -12,6 +12,8 @@ from app.domain.enums import (
     ChatPhase,
     ChatResultType,
     ChatStatus,
+    EvaluationCategory,
+    EvaluationState,
     IngestionState,
     ResponseLength,
     Role,
@@ -270,3 +272,63 @@ class ChatTraceView(StrictModel):
     models: dict[str, str]
     usage: dict[str, int | float]
     error_code: str | None
+
+
+class EvaluationCreateResponse(StrictModel):
+    evaluation_run_id: str
+    state: EvaluationState
+    total_cases: int
+    completed_cases: int
+    poll_after_ms: int = 1000
+
+
+class EvaluationProgress(StrictModel):
+    completed: int
+    total: int
+    passed: int
+    failed: int
+    errors: int
+
+
+class EvaluationRunView(StrictModel):
+    id: str
+    version_id: str
+    state: EvaluationState
+    progress: EvaluationProgress
+    models: dict[str, str]
+    metrics: dict[str, float] | None
+    usage: dict[str, int | float]
+    release_eligible: bool
+    safe_error: str | None
+    created_at: datetime
+    finished_at: datetime | None
+
+
+class EvaluationRunList(StrictModel):
+    evaluations: list[EvaluationRunView]
+
+
+class EvaluationCaseSummary(StrictModel):
+    id: str
+    case_key: str
+    category: EvaluationCategory
+    safe_prompt: str
+    expected_result_type: ChatResultType
+    actual_result_type: ChatResultType | None
+    state: str
+    passed: bool
+    blocking: bool
+    safe_error_code: str | None
+
+
+class EvaluationCaseList(StrictModel):
+    cases: list[EvaluationCaseSummary]
+
+
+class EvaluationCaseDetail(EvaluationCaseSummary):
+    deterministic_checks: dict[str, bool]
+    evidence: list[dict[str, object]]
+    judge: dict[str, int | str] | None
+    usage: dict[str, int | float]
+    latency_ms: int
+    trace_run_id: str | None

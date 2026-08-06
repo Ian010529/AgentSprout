@@ -14,7 +14,14 @@ from app.api.schemas import (
     VersionDetail,
 )
 from app.domain.enums import VersionState
-from app.services.agents import create_agent, get_agent, get_version, list_agents, update_version
+from app.services.agents import (
+    create_agent,
+    get_agent,
+    get_version,
+    list_agents,
+    submit_version,
+    update_version,
+)
 
 router = APIRouter(prefix="/studio", tags=["studio-agents"])
 
@@ -66,3 +73,14 @@ def edit_version(
     session: MutationSession,
 ) -> VersionDetail:
     return update_version(db, session, version_id, payload)
+
+
+@router.post("/versions/{version_id}/submit", response_model=VersionDetail)
+def submit_agent_version(
+    version_id: str,
+    db: DatabaseSession,
+    runtime_settings: RuntimeSettings,
+    session: MutationSession,
+    idempotency_key: Annotated[str | None, Header(alias="Idempotency-Key")] = None,
+) -> VersionDetail:
+    return submit_version(db, runtime_settings, session, version_id, idempotency_key)

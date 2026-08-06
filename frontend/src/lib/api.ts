@@ -42,7 +42,7 @@ export type AgentCreate = AgentFields & { template: "KNOWLEDGE_EXPLORER" };
 export type VersionSummary = {
   id: string;
   number: number;
-  state: "DRAFT";
+  state: "DRAFT" | "IN_REVIEW";
   knowledge_status: KnowledgeStatus;
 };
 export type AgentSummary = {
@@ -65,7 +65,7 @@ export type VersionDetail = AgentFields & {
   id: string;
   agent_id: string;
   version_number: number;
-  state: "DRAFT";
+  state: "DRAFT" | "IN_REVIEW";
   active_document_id: string | null;
   knowledge_status: KnowledgeStatus;
   knowledge: KnowledgeView;
@@ -164,6 +164,48 @@ export type ChatTrace = {
   models: Record<"online" | "moderation" | "embedding", string>;
   usage: Record<string, number>;
   error_code: string | null;
+};
+
+export type EvaluationState = "QUEUED" | "RUNNING" | "COMPLETED" | "FAILED";
+export type EvaluationCategory =
+  | "KNOWLEDGE"
+  | "OUT_OF_KNOWLEDGE"
+  | "PRIVACY"
+  | "HOMEWORK"
+  | "INJECTION"
+  | "AGE";
+export type EvaluationRun = {
+  id: string;
+  version_id: string;
+  state: EvaluationState;
+  progress: { completed: number; total: number; passed: number; failed: number; errors: number };
+  models: Record<"online" | "judge" | "embedding" | "moderation", string>;
+  metrics: { grounded_pass_rate: number; age_average: number; instruction_average: number } | null;
+  usage: { input_tokens: number; output_tokens: number; estimated_cost_usd: number };
+  release_eligible: boolean;
+  safe_error: string | null;
+  created_at: string;
+  finished_at: string | null;
+};
+export type EvaluationCase = {
+  id: string;
+  case_key: string;
+  category: EvaluationCategory;
+  safe_prompt: string;
+  expected_result_type: ChatResultType;
+  actual_result_type: ChatResultType | null;
+  state: string;
+  passed: boolean;
+  blocking: boolean;
+  safe_error_code: string | null;
+};
+export type EvaluationCaseDetail = EvaluationCase & {
+  deterministic_checks: Record<string, boolean>;
+  evidence: Array<Record<string, unknown>>;
+  judge: Record<string, string | number> | null;
+  usage: Record<string, number>;
+  latency_ms: number;
+  trace_run_id: string | null;
 };
 
 type ErrorEnvelope = {
@@ -333,6 +375,12 @@ export const studioApi = {
       body: payload,
       csrfToken,
     }),
+  submitVersion: (versionId: string, csrfToken: string, idempotencyKey: string) =>
+    requestJson<VersionDetail>(`/api/v1/studio/versions/${versionId}/submit`, {
+      method: "POST",
+      csrfToken,
+      idempotencyKey,
+    }),
   uploadKnowledge: (versionId: string, file: File, csrfToken: string, idempotencyKey: string) => {
     const form = new FormData();
     form.append("file", file);
@@ -383,4 +431,23 @@ export const studioApi = {
     }),
   getTrace: (runId: string, signal?: AbortSignal) =>
     requestJson<ChatTrace>(`/api/v1/studio/runs/${runId}/trace`, { signal }),
+  startEvaluation: (versionId: string, csrfToken: string, idempotencyKey: string) =>
+    requestJson<{ evaluation_run_id: string; state: EvaluationState; total_cases: number }>(
+      `/api/v1/studio/versions/${versionId}/evaluations`,
+      { method: "POST", csrfToken, idempotencyKey },
+    ),
+  getEvaluation: (runId: string, signal?: AbortSignal) =>
+    requestJson<EvaluationRun>(`/api/v1/studio/evaluations/${runId}`, { signal }),
+  listEvaluations: (versionId: string, signal?: AbortSignal) =>
+    requestJson<{ evaluations: EvaluationRun[] }>(
+      `/api/v1/studio/versions/${versionId}/evaluations`,
+      { signal },
+    ),
+  getEvaluationCases: (runId: string, category?: EvaluationCategory, signal?: AbortSignal) =>
+    requestJson<{ cases: EvaluationCase[] }>(
+      `/api/v1/studio/evaluations/${runId}/cases${category ? `?category=${category}` : ""}`,
+      { signal },
+    ),
+  getEvaluationCase: (resultId: string, signal?: AbortSignal) =>
+    requestJson<EvaluationCaseDetail>(`/api/v1/studio/evaluation-cases/${resultId}`, { signal }),
 };

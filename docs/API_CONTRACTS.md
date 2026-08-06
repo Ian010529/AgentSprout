@@ -421,6 +421,12 @@ Returns persisted progress and, when complete, metrics and eligibility:
 }
 ```
 
+### `GET /studio/versions/{version_id}/evaluations`
+
+Teacher-only. Returns evaluation runs for the submitted version newest first, using the
+same safe run-summary shape as the status endpoint. This restores active progress and lets
+the Teacher select immutable historical runs after refresh.
+
 ### `GET /studio/evaluations/{evaluation_run_id}/cases`
 
 Teacher-only. Returns case summaries and sanitized evidence. Filters: category, state, pass, blocking.

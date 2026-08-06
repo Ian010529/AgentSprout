@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 import { KnowledgePanel } from "@/components/knowledge-panel";
 import { PlaygroundPanel } from "@/components/playground-panel";
@@ -40,6 +40,7 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
   const [draft, setDraft] = useState<AgentFields | null>(null);
   const [pending, setPending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const submitKey = useRef<string | null>(null);
 
   const replaceVersion = useCallback((version: VersionDetail) => {
     setState((current) => current.phase === "ready" ? { ...current, version } : current);
@@ -129,6 +130,23 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
     }
   }
 
+  async function submitForReview() {
+    if (state.phase !== "ready" || pending || !knowledgeReady) return;
+    setPending(true);
+    setNotice(null);
+    submitKey.current ??= crypto.randomUUID();
+    try {
+      await studioApi.submitVersion(state.version.id, state.csrf, submitKey.current);
+      submitKey.current = null;
+      router.push(`/studio/review/${agentId}`);
+    } catch (error) {
+      if (!(error instanceof ApiError && error.retryable)) submitKey.current = null;
+      if (error instanceof ApiError && error.status === 401) sessionExpired();
+      else setNotice(error instanceof Error ? error.message : "The version could not be submitted.");
+      setPending(false);
+    }
+  }
+
   if (state.phase === "loading") return <main className="studio-loading" aria-live="polite"><span className="ocean-loader" aria-hidden="true" /><p>Opening Agent Draft…</p></main>;
   if (state.phase === "error") return <main className="studio-loading" role="alert"><p className="eyebrow">{state.missing ? "Draft not found" : "Workspace interrupted"}</p><h1>{state.message}</h1><div className="error-actions"><Link href="/studio">Back to workshop</Link>{!state.missing ? <button className="studio-primary" onClick={() => { setState({ phase: "loading" }); void load(); }}>Try again</button> : null}</div></main>;
 
@@ -147,7 +165,7 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
           <li className="is-complete"><span>01</span><strong>Define</strong><small>Drafted</small></li>
           <li className={knowledgeReady ? "is-complete" : "is-active"}><span>02</span><strong>Knowledge</strong><small>{knowledgeReady ? "Ready" : knowledgeProcessing ? "Processing" : "In progress"}</small></li>
           <li className={knowledgeReady ? "is-active" : ""}><span>03</span><strong>Test</strong><small>{knowledgeReady ? "Open" : "Locked"}</small></li>
-          <li><span>04</span><strong>Submit</strong><small>Locked</small></li>
+          <li className={knowledgeReady ? "is-active" : ""}><span>04</span><strong>Submit</strong><small>{knowledgeReady ? "Ready" : "Locked"}</small></li>
         </ol>
 
         <section className="define-sheet" aria-labelledby="define-title">
@@ -188,7 +206,13 @@ export function AgentWorkspace({ agentId }: { agentId: string }) {
 
         <section className="locked-stages" aria-label="Later build stages">
           {!knowledgeReady ? <LockedStage number="03" title="Test behavior" copy="Add a Ready source before asking grounded questions or trying safety boundaries." /> : null}
-          <LockedStage number="04" title="Request review" copy="Submit only after knowledge and safety checks are complete." />
+          {knowledgeReady ? (
+            <article className="submit-stage" aria-labelledby="submit-title">
+              <div><p className="eyebrow">04 · Submit</p><h2 id="submit-title">Lock v1 for Teacher review.</h2><p>Submission freezes this configuration and knowledge source. The Teacher can then run the fixed 16-case suite.</p></div>
+              {state.role === "STUDENT" ? <button className="studio-primary" type="button" disabled={pending} onClick={() => void submitForReview()}>{pending ? "Submitting once…" : "Submit v1 for review"}</button> : <p className="read-only-note">Switch to Student to submit this Draft.</p>}
+              {notice ? <p className="studio-alert" role="status">{notice}</p> : null}
+            </article>
+          ) : <LockedStage number="04" title="Request review" copy="Submit only after knowledge and safety checks are complete." />}
         </section>
       </main>
     </StudioShell>

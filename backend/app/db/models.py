@@ -192,6 +192,7 @@ class ChatRun(Base):
         ForeignKey("studio_conversations.id", ondelete="CASCADE"), nullable=True, index=True
     )
     surface: Mapped[str] = mapped_column(String(16))
+    audience_age_override: Mapped[str | None] = mapped_column(String(16), nullable=True)
     phase: Mapped[str] = mapped_column(String(32), index=True)
     status: Mapped[str] = mapped_column(String(16), index=True)
     result_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
@@ -274,3 +275,85 @@ class SafetyEvent(Base):
     detector: Mapped[str] = mapped_column(String(48))
     safe_summary: Mapped[str] = mapped_column(String(240))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class EvaluationCase(Base):
+    __tablename__ = "evaluation_cases"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    case_key: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    suite_version: Mapped[str] = mapped_column(String(48), index=True)
+    category: Mapped[str] = mapped_column(String(32), index=True)
+    prompt_template: Mapped[str] = mapped_column(Text)
+    audience_age: Mapped[str] = mapped_column(String(16))
+    expected_result_type: Mapped[str] = mapped_column(String(16))
+    expected_pages_json: Mapped[str] = mapped_column(Text)
+    rubric_version: Mapped[str] = mapped_column(String(48))
+    enabled: Mapped[int] = mapped_column(Integer, default=1)
+
+
+class EvaluationRun(Base):
+    __tablename__ = "evaluation_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    version_id: Mapped[str] = mapped_column(
+        ForeignKey("agent_versions.id", ondelete="CASCADE"), index=True
+    )
+    triggered_by_session_id: Mapped[str | None] = mapped_column(
+        ForeignKey("demo_sessions.id", ondelete="SET NULL"), nullable=True
+    )
+    state: Mapped[str] = mapped_column(String(16), index=True)
+    suite_version: Mapped[str] = mapped_column(String(48))
+    online_model: Mapped[str] = mapped_column(String(100))
+    judge_model: Mapped[str] = mapped_column(String(100))
+    embedding_model: Mapped[str] = mapped_column(String(100))
+    moderation_model: Mapped[str] = mapped_column(String(100))
+    total_cases: Mapped[int] = mapped_column(Integer)
+    completed_cases: Mapped[int] = mapped_column(Integer, default=0)
+    passed_cases: Mapped[int] = mapped_column(Integer, default=0)
+    failed_cases: Mapped[int] = mapped_column(Integer, default=0)
+    error_cases: Mapped[int] = mapped_column(Integer, default=0)
+    grounded_pass_rate: Mapped[float | None] = mapped_column(Numeric(6, 4), nullable=True)
+    age_average: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    instruction_average: Mapped[float | None] = mapped_column(Numeric(4, 2), nullable=True)
+    release_eligible: Mapped[int] = mapped_column(Integer, default=0)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[float] = mapped_column(Numeric(12, 8), default=0)
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    timeout_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+class EvaluationCaseResult(Base):
+    __tablename__ = "evaluation_case_results"
+    __table_args__ = (UniqueConstraint("evaluation_run_id", "evaluation_case_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    evaluation_run_id: Mapped[str] = mapped_column(
+        ForeignKey("evaluation_runs.id", ondelete="CASCADE"), index=True
+    )
+    evaluation_case_id: Mapped[str] = mapped_column(
+        ForeignKey("evaluation_cases.id", ondelete="RESTRICT"), index=True
+    )
+    state: Mapped[str] = mapped_column(String(16))
+    passed: Mapped[int] = mapped_column(Integer, default=0)
+    blocking: Mapped[int] = mapped_column(Integer, default=0)
+    runtime_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("chat_runs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    deterministic_checks_json: Mapped[str] = mapped_column(Text)
+    evidence_json: Mapped[str] = mapped_column(Text)
+    evidence_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    age_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    instruction_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    judge_rationale: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[float] = mapped_column(Numeric(12, 8), default=0)
+    latency_ms: Mapped[int] = mapped_column(Integer, default=0)
+    safe_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
