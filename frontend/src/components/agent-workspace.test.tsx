@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { AgentWorkspace } from "./agent-workspace";
 
-const navigation = vi.hoisted(() => ({ replace: vi.fn() }));
+const navigation = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
 const studioMocks = vi.hoisted(() => ({
   restore: vi.fn(),
   listAgents: vi.fn(),
@@ -17,6 +17,7 @@ const studioMocks = vi.hoisted(() => ({
   getIngestionJob: vi.fn(),
   retryIngestion: vi.fn(),
   deleteKnowledge: vi.fn(),
+  getLatestConversation: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => navigation }));
@@ -47,7 +48,10 @@ const version = {
   updated_at: "2026-08-06T10:00:00Z",
 };
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  window.history.replaceState(null, "", "/");
+});
 
 describe("AgentWorkspace", () => {
   it("PATCHes only the editable field allowlist and restores saved values", async () => {
@@ -83,5 +87,70 @@ describe("AgentWorkspace", () => {
     );
     expect(payload).not.toHaveProperty("state");
     expect(projectName.value).toBe("Ocean Field Guide");
+  });
+
+  it("shows one URL-backed stage and redirects a locked stage to Knowledge", async () => {
+    window.history.replaceState(null, "", "/studio/agents/agent-1#test");
+    studioMocks.restore.mockResolvedValue({
+      session: { role: "STUDENT", expires_at: "2026-08-06T12:00:00Z" },
+      csrf_token: "csrf-student",
+    });
+    studioMocks.getAgent.mockResolvedValue({ current_draft_version_id: "version-1" });
+    studioMocks.getVersion.mockResolvedValue(version);
+
+    render(<AgentWorkspace agentId="agent-1" />);
+
+    const knowledgeButton = await screen.findByRole("button", { name: /Knowledge/ });
+    const defineButton = screen.getByRole("button", { name: /Define/ });
+    const testButton = screen.getByRole("button", { name: /Test/ });
+    const definePanel = document.getElementById("workspace-panel-define");
+    const knowledgePanel = document.getElementById("workspace-panel-knowledge");
+
+    await waitFor(() => expect(window.location.hash).toBe("#knowledge"));
+    expect(knowledgeButton).toHaveAttribute("aria-current", "step");
+    expect(testButton).toBeDisabled();
+    expect(knowledgePanel).toBeVisible();
+    expect(definePanel).not.toBeVisible();
+
+    fireEvent.click(defineButton);
+    expect(window.location.hash).toBe("#define");
+    expect(definePanel).toBeVisible();
+    expect(knowledgePanel).not.toBeVisible();
+  });
+
+  it("keeps the Ready Submit sheet outside locked-stage layout rules", async () => {
+    window.history.replaceState(null, "", "/studio/agents/agent-1#submit");
+    studioMocks.restore.mockResolvedValue({
+      session: { role: "STUDENT", expires_at: "2026-08-06T12:00:00Z" },
+      csrf_token: "csrf-student",
+    });
+    studioMocks.getAgent.mockResolvedValue({ current_draft_version_id: "version-1" });
+    studioMocks.getVersion.mockResolvedValue({
+      ...version,
+      active_document_id: "document-1",
+      knowledge_status: "READY",
+      knowledge: {
+        active_document: {
+          id: "document-1",
+          original_filename: "ocean-literacy.pdf",
+          status: "READY",
+          page_count: 13,
+          chunk_count: 42,
+          sha256: "abc123",
+          embedding_model: "text-embedding-3-small",
+          ready_at: "2026-08-06T10:05:00Z",
+        },
+        latest_job: null,
+      },
+    });
+    studioMocks.getLatestConversation.mockResolvedValue(null);
+
+    render(<AgentWorkspace agentId="agent-1" />);
+
+    const submit = await screen.findByRole("button", { name: "Submit v1 for review" });
+    expect(window.location.hash).toBe("#submit");
+    expect(submit.closest(".submit-stage")).not.toBeNull();
+    expect(submit.closest(".locked-stages")).toBeNull();
+    expect(document.getElementById("workspace-panel-submit")).toBeVisible();
   });
 });

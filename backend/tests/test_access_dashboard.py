@@ -156,7 +156,10 @@ def test_agent_create_is_idempotent_persistent_and_audited(client: TestClient) -
     listing = client.get("/api/v1/studio/agents")
     aggregate = client.get(f"/api/v1/studio/agents/{agent_id}")
     version = client.get(f"/api/v1/studio/versions/{version_id}")
-    assert listing.json()["agents"][0]["display_name"] == "Ocean Explorer"
+    summary = listing.json()["agents"][0]
+    assert summary["display_name"] == "Ocean Explorer"
+    assert summary["slug"].startswith("ocean-explorer-")
+    assert summary["published_version"] is None
     assert aggregate.json()["current_draft_version_id"] == version_id
     assert version.json()["state"] == "DRAFT"
 

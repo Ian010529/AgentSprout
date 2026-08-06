@@ -26,6 +26,36 @@ const studentSession = {
   csrf_token: "csrf-student",
 };
 
+const draftAgent = {
+  id: "agent-draft",
+  display_name: "Draft Explorer",
+  slug: "draft-explorer",
+  current_version: { id: "version-draft", number: 1, state: "DRAFT", knowledge_status: "NOT_ADDED" },
+  published_version: null,
+  allowed_actions: ["EDIT_DRAFT"],
+  next_action: "Continue defining the agent",
+};
+
+const reviewAgent = {
+  id: "agent-review",
+  display_name: "Review Explorer",
+  slug: "review-explorer",
+  current_version: { id: "version-review", number: 1, state: "IN_REVIEW", knowledge_status: "READY" },
+  published_version: null,
+  allowed_actions: [],
+  next_action: "Waiting for teacher evaluation",
+};
+
+const publishedAgent = {
+  id: "agent-live",
+  display_name: "Live Explorer",
+  slug: "live-explorer",
+  current_version: { id: "version-draft-2", number: 2, state: "DRAFT", knowledge_status: "READY" },
+  published_version: { id: "version-live", number: 1, state: "PUBLISHED", knowledge_status: "READY" },
+  allowed_actions: ["EDIT_DRAFT"],
+  next_action: "Continue defining the agent",
+};
+
 afterEach(() => {
   vi.clearAllMocks();
 });
@@ -68,5 +98,32 @@ describe("StudioDashboard", () => {
 
     await waitFor(() => expect(studioMocks.createAgent).toHaveBeenCalledTimes(1));
     expect(screen.getByRole("button", { name: "Creating once…" })).toBeDisabled();
+  });
+
+  it("shows only review-flow Agents in the active Reviews destination", async () => {
+    studioMocks.restore.mockResolvedValue(studentSession);
+    studioMocks.listAgents.mockResolvedValue({ agents: [draftAgent, reviewAgent, publishedAgent] });
+    render(<StudioDashboard view="reviews" />);
+
+    expect(await screen.findByRole("heading", { name: "Ready for a decision" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Reviews" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Review Explorer")).toBeInTheDocument();
+    expect(screen.queryByText("Draft Explorer")).not.toBeInTheDocument();
+    expect(screen.queryByText("Live Explorer")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open review →" })).toHaveAttribute("href", "/studio/review/agent-review");
+  });
+
+  it("keeps a published version visible while a newer Draft exists", async () => {
+    studioMocks.restore.mockResolvedValue(studentSession);
+    studioMocks.listAgents.mockResolvedValue({ agents: [draftAgent, publishedAgent] });
+    render(<StudioDashboard view="published" />);
+
+    expect(await screen.findByRole("heading", { name: "Published agents" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Published" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText("Live Explorer")).toBeInTheDocument();
+    expect(screen.getByText("PUBLISHED")).toBeInTheDocument();
+    expect(screen.queryByText("Draft Explorer")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open public Agent ↗" })).toHaveAttribute("href", "/p/live-explorer");
+    expect(screen.getByRole("link", { name: "Manage release →" })).toHaveAttribute("href", "/studio/review/agent-live");
   });
 });

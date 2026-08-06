@@ -301,6 +301,28 @@ All decisions below were confirmed with the user before implementation. Changes 
   the approved topology while making Secure HttpOnly sessions first-party to the browser;
   Railway still enforces exact Origin, CSRF, role, and session checks.
 
+### D-049 — Workspace stages use URL-backed tabs
+
+- Date: 2026-08-06
+- Decision: The existing Agent Workspace route presents Define, Knowledge, Test, and Submit
+  as stage tabs with one visible panel at a time. Selection is stored in the URL fragment and
+  responds to browser history. Panels stay mounted to preserve local and asynchronous state;
+  Test and Submit remain disabled until knowledge is Ready.
+- Reason: The vertically stacked workspace obscured the staged product flow and produced an
+  unnecessarily long page. URL-backed tabs improve demo navigation without changing the API,
+  persistence model, route ownership, or approved four-stage state machine.
+
+### D-050 — Studio sidebar destinations are filtered product views
+
+- Date: 2026-08-06
+- Decision: Replace the disabled Reviews and Published sidebar placeholders with `/studio/reviews`
+  and `/studio/published`. Both reuse the existing Dashboard/session flow and Agent card data.
+  Reviews includes current `IN_REVIEW` and `APPROVED` versions. Published is keyed by a separate
+  published-version summary so it remains accurate when the Agent also has a newer Draft.
+- Reason: Disabled navigation makes completed evaluation and publication capabilities appear
+  unfinished. Small filtered views expose the existing lifecycle without adding another store,
+  duplicating workflows, or introducing an administrative product surface.
+
 ## Open implementation selections that do not change product scope
 
 These are intentionally selected and recorded during the named module:

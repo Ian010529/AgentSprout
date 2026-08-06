@@ -3,15 +3,24 @@ import type { ReactNode } from "react";
 
 import type { Role } from "@/lib/api";
 
+export type StudioSection = "workshop" | "reviews" | "published";
+
 type StudioShellProps = {
   role: Role;
+  activeSection?: StudioSection;
   busy?: boolean;
   children: ReactNode;
   onRoleChange: (role: Role) => void;
   onSignOut: () => void;
 };
 
-export function StudioShell({ role, busy, children, onRoleChange, onSignOut }: StudioShellProps) {
+const STUDIO_NAV: Array<{ id: StudioSection; number: string; label: string; href: string }> = [
+  { id: "workshop", number: "01", label: "Workshop", href: "/studio" },
+  { id: "reviews", number: "02", label: "Reviews", href: "/studio/reviews" },
+  { id: "published", number: "03", label: "Published", href: "/studio/published" },
+];
+
+export function StudioShell({ role, activeSection = "workshop", busy, children, onRoleChange, onSignOut }: StudioShellProps) {
   return (
     <div className="studio-frame">
       <aside className="studio-sidebar">
@@ -23,15 +32,16 @@ export function StudioShell({ role, busy, children, onRoleChange, onSignOut }: S
           AgentSprout
         </Link>
         <nav aria-label="Studio navigation">
-          <Link className="studio-nav-link studio-nav-link--active" href="/studio">
-            <span>01</span> Workshop
-          </Link>
-          <span className="studio-nav-link studio-nav-link--locked" aria-disabled="true">
-            <span>02</span> Reviews
-          </span>
-          <span className="studio-nav-link studio-nav-link--locked" aria-disabled="true">
-            <span>03</span> Published
-          </span>
+          {STUDIO_NAV.map((item) => (
+            <Link
+              key={item.id}
+              className={`studio-nav-link${activeSection === item.id ? " studio-nav-link--active" : ""}`}
+              href={item.href}
+              aria-current={activeSection === item.id ? "page" : undefined}
+            >
+              <span aria-hidden="true">{item.number}</span> {item.label}
+            </Link>
+          ))}
         </nav>
         <div className="sidebar-note">
           <p>Concept build</p>

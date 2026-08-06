@@ -200,11 +200,18 @@ def list_agents(
         is_review = version.state == VersionState.IN_REVIEW.value
         if needs_review is not None and is_review != needs_review:
             continue
+        published_version = (
+            db.get(AgentVersion, agent.published_version_id) if agent.published_version_id else None
+        )
         summaries.append(
             AgentSummary(
                 id=agent.id,
                 display_name=agent.display_name,
+                slug=agent.slug,
                 current_version=_version_summary(db, version),
+                published_version=(
+                    _version_summary(db, published_version) if published_version else None
+                ),
                 allowed_actions=_allowed_actions(session.role, version.state),
                 next_action=_next_action(session.role, version.state),
             )

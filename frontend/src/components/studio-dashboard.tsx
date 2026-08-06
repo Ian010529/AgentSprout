@@ -18,6 +18,8 @@ type DashboardState =
   | { phase: "ready"; role: Role; csrf: string; expiresAt: string; agents: AgentSummary[] }
   | { phase: "error"; message: string; retryable: boolean };
 
+export type StudioDashboardView = "workshop" | "reviews" | "published";
+
 const initialAgent: AgentCreate = {
   template: "KNOWLEDGE_EXPLORER",
   project_name: "Ocean Explorer",
@@ -38,7 +40,7 @@ function messageFor(error: unknown): string {
   return error.message;
 }
 
-export function StudioDashboard() {
+export function StudioDashboard({ view = "workshop" }: { view?: StudioDashboardView }) {
   const router = useRouter();
   const [state, setState] = useState<DashboardState>({ phase: "loading" });
   const [showCreate, setShowCreate] = useState(false);
@@ -166,10 +168,26 @@ export function StudioDashboard() {
   }
 
   const isStudent = state.role === "STUDENT";
+  const reviewAgents = state.agents.filter((agent) => ["IN_REVIEW", "APPROVED"].includes(agent.current_version.state));
+  const publishedAgents = state.agents.filter((agent) => agent.published_version !== null);
+  const visibleAgents = view === "reviews" ? reviewAgents : view === "published" ? publishedAgents : state.agents;
   const submittedCount = state.agents.filter((agent) => agent.current_version.state === "IN_REVIEW").length;
+  const approvedCount = state.agents.filter((agent) => agent.current_version.state === "APPROVED").length;
+  const heading = view === "reviews"
+    ? { eyebrow: "Teacher release desk", title: "Review what is ready.", copy: "Evaluate submitted work, inspect approved evidence, and make the next release decision." }
+    : view === "published"
+      ? { eyebrow: "Live Agent directory", title: "See what learners can open.", copy: "Open the public experience or return to its review record to manage the release." }
+      : {
+          eyebrow: isStudent ? "Student workshop" : "Teacher review desk",
+          title: isStudent ? "Build one useful thing." : "Review what is ready.",
+          copy: isStudent
+            ? "Start with a learner need, then make every design choice testable."
+            : "Submitted agents will appear first, with evidence and release readiness.",
+        };
   return (
     <StudioShell
       role={state.role}
+      activeSection={view}
       busy={mutationPending}
       onRoleChange={(role) => void changeRole(role)}
       onSignOut={() => void signOut()}
@@ -177,13 +195,9 @@ export function StudioDashboard() {
       <main className="studio-main">
         <section className="dashboard-heading">
           <div>
-            <p className="eyebrow">{isStudent ? "Student workshop" : "Teacher review desk"}</p>
-            <h1>{isStudent ? "Build one useful thing." : "Review what is ready."}</h1>
-            <p>
-              {isStudent
-                ? "Start with a learner need, then make every design choice testable."
-                : "Submitted agents will appear first, with evidence and release readiness."}
-            </p>
+            <p className="eyebrow">{heading.eyebrow}</p>
+            <h1>{heading.title}</h1>
+            <p>{heading.copy}</p>
           </div>
           <div className="session-note">
             <span>Session</span>
@@ -193,7 +207,7 @@ export function StudioDashboard() {
 
         {formError ? <p className="studio-alert" role="alert">{formError}</p> : null}
 
-        {isStudent ? (
+        {view === "workshop" && isStudent ? (
           <section className="template-section" aria-labelledby="template-title">
             <div className="section-label">
               <span>01</span>
@@ -212,15 +226,29 @@ export function StudioDashboard() {
               </button>
             </article>
           </section>
-        ) : (
+        ) : view === "workshop" ? (
           <section className="review-shell" aria-labelledby="review-title">
             <p className="eyebrow">Review priority</p>
             <h2 id="review-title">{submittedCount ? `${submittedCount} Agent${submittedCount === 1 ? " is" : "s are"} ready.` : "Nothing is waiting for review."}</h2>
             <p>{submittedCount ? "Open a submitted Agent to run or inspect its fixed evaluation suite." : "Drafts remain visible below, but only submitted versions can be evaluated."}</p>
           </section>
+        ) : view === "reviews" ? (
+          <DirectoryOverview
+            eyebrow="Review queue"
+            title={reviewAgents.length ? `${reviewAgents.length} Agent${reviewAgents.length === 1 ? " is" : "s are"} in the release flow.` : "The release desk is clear."}
+            copy="Submitted versions need evaluation. Approved versions are ready for a deliberate publish decision."
+            metrics={[{ label: "Awaiting evaluation", value: submittedCount }, { label: "Approved", value: approvedCount }]}
+          />
+        ) : (
+          <DirectoryOverview
+            eyebrow="Public directory"
+            title={publishedAgents.length ? `${publishedAgents.length} Agent${publishedAgents.length === 1 ? " is" : "s are"} live.` : "No Agent is public right now."}
+            copy="Only the currently published version appears here; private Drafts and review evidence remain inside Studio."
+            metrics={[{ label: "Live agents", value: publishedAgents.length }, { label: "Public access", value: "Open" }]}
+          />
         )}
 
-        {showCreate && isStudent ? (
+        {showCreate && isStudent && view === "workshop" ? (
           <CreateAgentForm
             draft={draft}
             pending={mutationPending}
@@ -233,31 +261,62 @@ export function StudioDashboard() {
 
         <section className="agents-section" aria-labelledby="agents-title">
           <div className="section-label">
-            <span>{isStudent ? "02" : "01"}</span>
-            <div><p className="eyebrow">Persisted work</p><h2 id="agents-title">{isStudent ? "Your agents" : "All agents"}</h2></div>
+            <span>{view === "workshop" && isStudent ? "02" : "01"}</span>
+            <div>
+              <p className="eyebrow">{view === "reviews" ? "Evidence queue" : view === "published" ? "Public releases" : "Persisted work"}</p>
+              <h2 id="agents-title">{view === "reviews" ? "Ready for a decision" : view === "published" ? "Published agents" : isStudent ? "Your agents" : "All agents"}</h2>
+            </div>
           </div>
-          {state.agents.length === 0 ? (
+          {visibleAgents.length === 0 ? (
             <div className="empty-workbench">
               <span aria-hidden="true">○</span>
-              <h3>{isStudent ? "The workbench is clear." : "No agents have been created yet."}</h3>
-              <p>{isStudent ? "Create Ocean Explorer from the template above to begin." : "Switch to Student mode to create the first Draft."}</p>
+              <h3>{view === "reviews" ? "Nothing needs a release decision." : view === "published" ? "Nothing has been published yet." : isStudent ? "The workbench is clear." : "No agents have been created yet."}</h3>
+              <p>{view === "reviews" ? "Submitted and approved versions will appear here automatically." : view === "published" ? "Approve and publish an evaluated Agent to make its public link appear here." : isStudent ? "Create Ocean Explorer from the template above to begin." : "Switch to Student mode to create the first Draft."}</p>
             </div>
           ) : (
             <div className="agent-grid">
-              {state.agents.map((agent) => (
-                <article className="agent-card" key={agent.id}>
-                  <div className="agent-card-top"><span>v{agent.current_version.number}</span><strong>{agent.current_version.state}</strong></div>
-                  <h3>{agent.display_name}</h3>
-                  <p>{agent.next_action}</p>
-                  <div className={`knowledge-line knowledge-line--${agent.current_version.knowledge_status.toLowerCase()}`}><span aria-hidden="true" /> Knowledge {agent.current_version.knowledge_status.toLowerCase().replace("_", " ")}</div>
-                  <Link href={agent.current_version.state === "IN_REVIEW" ? `/studio/review/${agent.id}` : `/studio/agents/${agent.id}`}>{agent.current_version.state === "IN_REVIEW" ? "Open review →" : isStudent ? "Continue Draft →" : "View Draft →"}</Link>
-                </article>
-              ))}
+              {visibleAgents.map((agent) => <AgentDirectoryCard key={agent.id} agent={agent} view={view} isStudent={isStudent} />)}
             </div>
           )}
         </section>
       </main>
     </StudioShell>
+  );
+}
+
+function DirectoryOverview({ eyebrow, title, copy, metrics }: { eyebrow: string; title: string; copy: string; metrics: Array<{ label: string; value: number | string }> }) {
+  return (
+    <section className="directory-overview" aria-label={eyebrow}>
+      <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2><p>{copy}</p></div>
+      <dl>{metrics.map((metric) => <div key={metric.label}><dt>{metric.label}</dt><dd>{metric.value}</dd></div>)}</dl>
+    </section>
+  );
+}
+
+function AgentDirectoryCard({ agent, view, isStudent }: { agent: AgentSummary; view: StudioDashboardView; isStudent: boolean }) {
+  const version = view === "published" && agent.published_version ? agent.published_version : agent.current_version;
+  const stateLabel = version.state.replace("_", " ");
+  const detailHref = view === "workshop" && agent.current_version.state === "DRAFT" ? `/studio/agents/${agent.id}` : `/studio/review/${agent.id}`;
+  const detailLabel = view === "reviews"
+    ? "Open review →"
+    : view === "published"
+      ? "Manage release →"
+      : agent.current_version.state === "DRAFT"
+        ? isStudent ? "Continue Draft →" : "View Draft →"
+        : agent.current_version.state === "CHANGES_REQUESTED"
+          ? "Review feedback →"
+          : "Open release record →";
+  return (
+    <article className={`agent-card${view === "published" ? " agent-card--published" : view === "reviews" ? " agent-card--review" : ""}`}>
+      <div className="agent-card-top"><span>v{version.number}</span><strong>{stateLabel}</strong></div>
+      <h3>{agent.display_name}</h3>
+      <p>{view === "published" ? "Public, age-aware answers backed by the approved knowledge version." : agent.next_action}</p>
+      <div className={`knowledge-line knowledge-line--${version.knowledge_status.toLowerCase()}`}><span aria-hidden="true" /> Knowledge {version.knowledge_status.toLowerCase().replace("_", " ")}</div>
+      <div className="agent-card-actions">
+        {view === "published" ? <Link href={`/p/${agent.slug}`} target="_blank">Open public Agent ↗</Link> : null}
+        <Link href={detailHref}>{detailLabel}</Link>
+      </div>
+    </article>
   );
 }
 

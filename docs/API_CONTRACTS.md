@@ -130,13 +130,19 @@ Optional filters: `state`, `needs_review`. Returns summarized agent cards and se
     {
       "id":"uuid",
       "display_name":"Ocean Explorer",
+      "slug":"ocean-explorer-1234abcd",
       "current_version":{"id":"uuid","number":1,"state":"DRAFT","knowledge_status":"NOT_ADDED"},
+      "published_version":null,
       "allowed_actions":["EDIT_DRAFT"],
       "next_action":"Continue defining the agent"
     }
   ]
 }
 ```
+
+`published_version` is the currently public version summary when one exists, independent of
+`current_version`. This lets the Published directory remain accurate while a newer Draft is
+being edited. `slug` is returned for constructing the public link; it is not a secret.
 
 ### `POST /studio/agents`
 

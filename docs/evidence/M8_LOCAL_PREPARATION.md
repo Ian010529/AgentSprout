@@ -31,7 +31,7 @@ pnpm test
 NEXT_PUBLIC_API_BASE_URL=https://api.example.test pnpm build
 ```
 
-Result: ESLint and TypeScript passed, Vitest passed 26 tests across 9 files, and
+Result: ESLint and TypeScript passed, Vitest passed 30 tests across 9 files, and
 the Next.js 16 production build completed with the same-origin `/api-proxy` rewrite
 targeting an HTTPS test backend origin. Production response security headers were
 inspected from `next start`; the CSP limited connections to self, and frame, MIME,
@@ -43,7 +43,7 @@ the same zero-violation/zero-console-error result.
 Repository validation result:
 
 ```text
-Repository validation passed: 169 tracked files, 491 history blobs.
+Repository validation passed: 171 tracked files, 528 history blobs.
 ```
 
 The check covers current source and Git-history key signatures, forbidden runtime
@@ -63,6 +63,27 @@ revision and 16 persisted definitions remained and readiness passed. The exact
 temporary container and volume were removed after verification.
 
 ## Browser, responsive, and accessibility
+
+The Agent Workspace stage-navigation polish was checked separately in headless Chromium
+at 1440 × 1000 against the running local frontend and backend. A stale locked `#test`
+fragment was covered by component regression; the real browser check then verified that
+exactly one stage panel remained visible, `#knowledge` survived refresh, browser Back
+restored the prior stage, and the console contained zero errors. The selected Knowledge
+view measured 1,139 px document height, avoiding the former four-panel stacked page.
+
+The Ready Submit stage was also inspected against a persisted Ready Agent after a CSS
+regression was found: nesting the Ready sheet inside `locked-stages` had overridden its
+two-column layout with the locked card's three-column grid. Ready and locked markup are now
+separate. Chromium reported the intended 756 px content / 220 px action columns, zero console
+errors, and the structural component test prevents the Ready action from re-entering a
+`locked-stages` ancestor.
+
+The formerly disabled Studio navigation placeholders were verified as real links in headless
+Chromium. Workshop, Reviews, and Published were all present; navigation reached
+`/studio/reviews` and `/studio/published`, each destination exposed `aria-current="page"`,
+rendered its server-backed empty state, and produced zero console errors. Component regressions
+also cover non-empty review filtering plus a Published card whose live v1 remains listed while
+the Agent's current working version is a private v2 Draft.
 
 Command: `node backend/tests/run_m7_browser.cjs` against a fresh provider-boundary
 test server, with public hourly limit five.

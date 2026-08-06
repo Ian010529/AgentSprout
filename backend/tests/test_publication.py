@@ -134,6 +134,11 @@ def test_publish_public_chat_privacy_rate_limit_and_withdraw(
     )
     assert replay.json() == published.json()
 
+    summary = client.get("/api/v1/studio/agents").json()["agents"][0]
+    assert summary["slug"] == "ocean-explorer"
+    assert summary["published_version"]["id"] == version_id
+    assert summary["published_version"]["state"] == "PUBLISHED"
+
     metadata = client.get("/api/v1/public/agents/ocean-explorer")
     assert metadata.status_code == 200
     assert metadata.headers["Cache-Control"] == "public, max-age=60"

@@ -23,6 +23,10 @@ The accepted local product is deployed from a public GitHub repository to Vercel
 ## Frontend scope
 
 - Final visual consistency across Access, Dashboard, Workspace, Teacher Review, and Published Agent.
+- Workspace stage navigation shows one of Define, Knowledge, Test, or Submit at a time,
+  preserves mounted panel state, records selection in the URL, and keeps locked stages disabled.
+- Workshop, Reviews, and Published sidebar destinations are working routes with active state,
+  server-authoritative filtered cards, public/management links, and honest empty states.
 - Complete loading/empty/success/error/timeout/rate/disabled/retry states.
 - Studio desktop-width behavior and Published Agent mobile behavior.
 - Keyboard/focus/live-region/contrast/reduced-motion verification.
@@ -75,6 +79,8 @@ The accepted local product is deployed from a public GitHub repository to Vercel
 ## Automated checks
 
 - full local CI suite
+- Workspace stage selection, URL restoration, Back/Forward behavior, and locked-stage regression
+- Studio navigation route, active-state, review-queue, and published-directory regression
 - cloud Playwright core flow
 - Chromium full, WebKit/mobile public critical flow
 - production browser console check

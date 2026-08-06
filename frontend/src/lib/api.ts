@@ -48,7 +48,9 @@ export type VersionSummary = {
 export type AgentSummary = {
   id: string;
   display_name: string;
+  slug: string;
   current_version: VersionSummary;
+  published_version: VersionSummary | null;
   allowed_actions: string[];
   next_action: string;
 };

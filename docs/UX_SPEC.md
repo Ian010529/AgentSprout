@@ -27,6 +27,8 @@ Planned frontend routes:
 | `/` | Public | Product introduction and Studio entry |
 | `/access` | Public | Studio access-code form |
 | `/studio` | Studio session | Dashboard, role switch, template, agent list |
+| `/studio/reviews` | Studio session | Submitted and approved Agent review queue |
+| `/studio/published` | Studio session | Currently published Agent directory and management links |
 | `/studio/agents/:agentId` | Studio session | Single-page Agent Workspace |
 | `/studio/review/:agentId` | Teacher role | Evaluation, evidence, versions, approval, publishing |
 | `/p/:slug` | Public | Published agent experience |
@@ -38,6 +40,7 @@ No settings center, account page, class-management page, or general admin UI is 
 ### Studio shell
 
 - AgentSprout wordmark
+- active links for Workshop, Reviews, and Published; no disabled placeholder navigation
 - current role and explicit Student/Teacher switch
 - current environment indicator only in development
 - session-expiry handling
@@ -67,6 +70,19 @@ Success sets a Secure HttpOnly session cookie and redirects to `/studio`. The ac
 
 ### 5.2 Dashboard
 
+The Studio shell exposes three URL-backed dashboard views that reuse the same session and
+agent-list request:
+
+- **Workshop** (`/studio`) shows the creation template and every Agent's current working version.
+- **Reviews** (`/studio/reviews`) shows current versions in `IN_REVIEW` or `APPROVED`, with
+  links into the existing Teacher Review experience. It has a clear empty queue state.
+- **Published** (`/studio/published`) shows Agents with a current published version, even when
+  the same Agent also has a newer Draft. Each card links to the public Agent and its review/
+  withdrawal controls. It has a clear no-live-agents state.
+
+The selected sidebar destination uses `aria-current="page"`. Role switching keeps the user
+in the selected view and refreshes its server-authoritative actions.
+
 Student mode:
 
 - Knowledge Explorer template card
@@ -85,7 +101,9 @@ Creation form fields follow `docs/PRD.md`. Inline validation must match server v
 
 ### 5.3 Agent Workspace
 
-One page with four sequential sections or tabs:
+One route with four sequential stage tabs. Only the selected stage panel is visible, while
+the other panels remain mounted so an in-progress upload, unsaved form state, and the current
+Playground conversation are not discarded when the user changes stages:
 
 1. **Define** — problem, intended users, audience age, success goal, welcome message, tone, length, custom instructions.
 2. **Knowledge** — file requirements, selected file, checksum/dedup result, persisted ingestion stages, failure reason, retry.
@@ -94,6 +112,12 @@ One page with four sequential sections or tabs:
 
 Rules:
 
+- The selected stage is stored in the URL fragment (`#define`, `#knowledge`, `#test`, or
+  `#submit`). Refresh and browser Back/Forward restore the selected unlocked stage.
+- Define and Knowledge are always selectable. Test and Submit are disabled until knowledge
+  is Ready; a stale URL targeting a locked stage returns to Knowledge.
+- The four-stage navigation exposes the selected and disabled states to assistive technology,
+  and switching stages moves focus to the newly displayed panel without a full-page reload.
 - A user cannot test before knowledge is Ready.
 - A user cannot submit while ingestion or a chat run is active.
 - Double submission is prevented client- and server-side.

@@ -253,7 +253,7 @@ export function TeacherEvaluation({ agentId }: { agentId: string }) {
   const visible = filter === "ALL" ? state.cases : state.cases.filter((item) => item.category === filter);
   const active = run && ["QUEUED", "RUNNING"].includes(run.state);
   return (
-    <StudioShell role={state.role} busy={pending} onRoleChange={(role) => void changeRole(role)} onSignOut={() => void signOut()}>
+    <StudioShell role={state.role} activeSection="reviews" busy={pending} onRoleChange={(role) => void changeRole(role)} onSignOut={() => void signOut()}>
       <main className="evaluation-main">
         <div className="workspace-breadcrumb"><Link href="/studio">Workshop</Link><span>/</span><strong>Teacher evidence</strong></div>
         <section className="evaluation-hero">

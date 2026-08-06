@@ -123,7 +123,9 @@ class VersionSummary(StrictModel):
 class AgentSummary(StrictModel):
     id: str
     display_name: str
+    slug: str
     current_version: VersionSummary
+    published_version: VersionSummary | None
     allowed_actions: list[str]
     next_action: str
 
