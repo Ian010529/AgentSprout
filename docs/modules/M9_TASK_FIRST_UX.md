@@ -2,7 +2,7 @@
 
 ## Status
 
-Local acceptance passed; cloud verification is in progress. The user approved this module on 2026-08-06 after reviewing the current
+Accepted on 2026-08-06. The user approved this module after reviewing the current
 cloud UI and confirming that the product should emphasize use rather than repeatedly
 promoting the Ocean Explorer sample.
 
@@ -114,4 +114,4 @@ priority over extended Agent metadata.
 - [x] Published desktop and mobile chat-first assertions pass.
 - [x] Existing behavior and accessibility regressions pass.
 - [x] Screenshots are reviewed and evidence is recorded.
-- [ ] Main is pushed, production is deployed, and final CI is green.
+- [x] Main is pushed, production is deployed, and final CI is green.

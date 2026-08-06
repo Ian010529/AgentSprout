@@ -44,4 +44,23 @@ Observed result:
 
 ## Cloud verification
 
-Pending push, Vercel deployment, GitHub CI, and live browser smoke at the implementation commit.
+Environment: Vercel production frontend with the accepted Railway backend
+
+Production URL: `https://agentsprout.vercel.app`
+
+Vercel deployment: `dpl_86ERTWHyudaruuhgKY9Aykvz5DUo` (`READY`, production alias applied)
+
+GitHub CI: `https://github.com/Ian010529/AgentSprout/actions/runs/31084420867`
+
+Results:
+
+- Vercel production build passed with Next.js 16.3.0 and all eight routes.
+- The M9 browser suite passed against the production alias in Chromium 1440 x 1000 and WebKit
+  375 x 812: first-viewport task checks, chat-first order, no horizontal overflow, zero axe
+  violations, and zero console errors.
+- GitHub CI passed backend, frontend, provider-boundary browser acceptance, repository-boundary
+  validation, Docker build, and container startup/volume-restart verification.
+- The workflow reported only GitHub's Node.js 20 action-runtime deprecation notice; it did not
+  report an application failure or product regression.
+
+Accepted on 2026-08-06.

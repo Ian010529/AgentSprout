@@ -2,7 +2,7 @@
 
 - Current module: **M9 — Task-first Studio and Chat-first Public Agent**
 - Module document: [`docs/modules/M9_TASK_FIRST_UX.md`](modules/M9_TASK_FIRST_UX.md)
-- Status: **Local acceptance passed; cloud verification in progress**
+- Status: **Accepted on 2026-08-06**
 - Implementation authorization: **Confirmed by the user on 2026-08-06**
 - Next module after acceptance: **Project handoff**
 
